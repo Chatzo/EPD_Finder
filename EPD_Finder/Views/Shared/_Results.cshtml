@@ -20,7 +20,16 @@
         {
             <tr>
                 <td>@result.ENumber</td>
-                <td>@result.EpdLink</td>
+                <td>
+                    @if (!string.IsNullOrWhiteSpace(result.EpdLink) && result.EpdLink != "Ej hittad")
+                    {
+                        <a href="@result.EpdLink" target="_blank">@result.EpdLink</a>
+                    }
+                    else
+                    {
+                        <span>Ej hittad</span>
+                    }
+                </td>
             </tr>
         }
     </tbody>

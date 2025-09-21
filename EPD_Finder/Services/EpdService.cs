@@ -1,16 +1,21 @@
-﻿using EPD_Finder.Models;
-using EPD_Finder.Services.IServices;
+﻿using EPD_Finder.Services.IServices;
 using HtmlAgilityPack;
+using Microsoft.Playwright;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace EPD_Finder.Services
 {
     public class EpdService : IEpdService
     {
         private readonly HttpClient _client;
+        private readonly ILogger<EpdService> _logger;
         private const string BaseUrl = "https://www.e-nummersok.se/infoDocs/EPD/";
-        public EpdService(HttpClient client)
+        public EpdService(HttpClient client, ILogger<EpdService> logger)
         {
             _client = client;
+            _client.DefaultRequestHeaders.Add("User-Agent", "C# App");
+            _logger = logger;
         }
         public List<string> ParseInput(string eNumbers, IFormFile file)
         {
@@ -53,117 +58,96 @@ namespace EPD_Finder.Services
 
             return list.Distinct().ToList();
         }
-        //public async Task<List<ArticleResult>> GetEpdLinksAsync(List<string> eNumbers)
-        //{
-        //    var results = new List<ArticleResult>();
-
-        //    // Hämta EPD-indexsidan
-        //    var html = await _client.GetStringAsync(BaseUrl);
-        //    var doc = new HtmlDocument();
-        //    doc.LoadHtml(html);
-
-        //    // Hämta alla länkar
-        //    var links = doc.DocumentNode.SelectNodes("//a[contains(@href,'/infoDocs/EPD/')]");
-
-        //    if (links == null) return results;
-
-        //    foreach (var en in eNumbers)
-        //    {
-        //        var match = links
-        //            .Select(a => a.GetAttributeValue("href", ""))
-        //            .FirstOrDefault(href => href.Contains(en));
-
-        //        if (match != null)
-        //        {
-        //            results.Add(new ArticleResult
-        //            {
-        //                ENumber = en,
-        //                EpdLink = match.StartsWith("/") ? BaseUrl + match : match
-        //            });
-        //        }
-        //    }
-
         //    return results;
         //}
-        public async Task<ArticleResult> GetEpdLinkByEnumberAsync(string enumber)
+        public async Task<string> TryGetEpdLink(string eNumber)
         {
-            var result = new ArticleResult
+            
+            var url = await GetURL(eNumber);
+            var supplierID = await GetSupplierIdFromEnumberWithAsync(url, eNumber);
+            if (supplierID == null)
+                return "Ej hittad";
+            string pdfUrl = $"{BaseUrl}EPD_{supplierID}_{eNumber}.pdf";
+            if(await IsLinkValid(pdfUrl))
             {
-                ENumber = enumber,
-                EpdLink = "Ej hittad"
-            };
+                return pdfUrl;
+            }
+            pdfUrl = $"{BaseUrl}EPD_{eNumber}.pdf";
+            if (await IsLinkValid(pdfUrl))
+            {
+                return pdfUrl;
+            }
+            return "Ej hittad";
+
+        }
+        private async Task<string> GetURL(string eNumber)
+        {
+            if (string.IsNullOrWhiteSpace(eNumber))
+                return null;
 
             try
             {
-                // Hämta indexsidan med alla EPD-länkar
-                var html = await _client.GetStringAsync(BaseUrl);
-                var doc = new HtmlDocument();
-                doc.LoadHtml(html);
+                string apiUrl = $"https://www.e-nummersok.se/ApiSearch/Suggest?ActiveOnly=true&PicsOnly=true&Query={eNumber}&Sort=1";
+                var response = await _client.GetStringAsync(apiUrl);
 
-                // Hämta alla <a>-taggar med EPD-länkar
-                var links = doc.DocumentNode.SelectNodes("//a[@href]");
+                using var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
 
-                if (links != null)
-                {
-                    // Leta efter länken som innehåller e-numret
-                    var match = links
-                        .Select(a => a.GetAttributeValue("href", ""))
-                        .FirstOrDefault(href => href.Contains(enumber));
+                if (root.GetProperty("Status").GetString() != "OK")
+                    return null;
 
-                    if (match != null)
-                    {
-                        // Absolut URL
-                        result.EpdLink = match.StartsWith("/") ? BaseUrl + match : match;
-                    }
-                }
+                var suggestions = root.GetProperty("Data").GetProperty("ProductSuggestionRows");
+                if (suggestions.GetArrayLength() == 0)
+                    return null;
+
+                var firstProduct = suggestions[0];
+                string url = firstProduct.GetProperty("Url").GetString()!;
+                return url;
             }
             catch (Exception ex)
             {
-                result.EpdLink = "Fel vid hämtning: " + ex.Message;
+                _logger.LogError(ex, "Fel vid hämtning av URL för e-nummer {Enummer}", eNumber);
+                return null;
             }
-
-            return result;
         }
-        //    public async Task<ArticleResult> ScrapeEnumber(string eNumber)
-        //    {
-        //        var result = new ArticleResult
-        //        {
-        //            ENumber = eNumber,
-        //            EpdLink = "Ej Hittad"
-        //        };
 
-        //        try
-        //        {
-        //            var searchUrl = $"https://www.e-nummersok.se/Search?searchText={eNumber}";
-        //            var html = await _client.GetStringAsync(searchUrl);
+        private async Task<string?> GetSupplierIdFromEnumberWithAsync(string url, string eNumber)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return null;
 
-        //            var doc = new HtmlAgilityPack.HtmlDocument();
-        //            doc.LoadHtml(html);
+            try
+            {
+                // Plocka ut sista numret i urlen med regex
+                var match = Regex.Match(url, @"-(\d+)$");
+                return match.Success ? match.Groups[1].Value : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fel vid hämtning av sista numret från produkt-URL för e-nummer {Enummer}", eNumber);
+                return null;
+            }
+        }
 
-        //            // Hämta första länken som innehåller /infoDocs/EPD/
-        //            var linkNode = doc.DocumentNode
-        //                .SelectNodes("//a[@href]")
-        //                ?.Select(a => a.GetAttributeValue("href", ""))
-        //                .FirstOrDefault(href => href.Contains("/infoDocs/EPD/"));
-
-        //            if (!string.IsNullOrEmpty(linkNode))
-        //            {
-        //                // Gör absolut URL om den börjar med /
-        //                result.EpdLink = linkNode.StartsWith("/")
-        //                    ? "https://www.e-nummersok.se" + linkNode
-        //                    : linkNode;
-        //            }
-        //            else
-        //            {
-        //                result.EpdLink = "EPD saknas / Ej Hittad";
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            result.EpdLink = "Fel vid hämtning: " + ex.Message;
-        //        }
-
-        //        return result;
-        //    }
+        private async Task<bool> IsLinkValid(string url)
+        {
+            try
+            {
+                // Check if the PDF exists
+                var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

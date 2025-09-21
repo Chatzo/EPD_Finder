@@ -31,25 +31,14 @@ namespace EPD_Finder.Controllers
             List<ArticleResult> results = new List<ArticleResult>();
             foreach (string num in list)
             {
-                ArticleResult res = await _epdService.GetEpdLinkByEnumberAsync(num);
-                if (res != null)
-                    results.Add(res);
+                var epdLink = await _epdService.TryGetEpdLink(num);
+                var res = new ArticleResult
+                {
+                    ENumber = num,
+                    EpdLink = epdLink
+                };
+                results.Add(res);
             }
-            //foreach (var en in list)
-            //{
-            //    if (_cache.ContainsKey(en))
-            //    {
-            //        results.Add(_cache[en]);
-            //        continue;
-            //    }
-
-            //    var result = await _epdService.ScrapeEnumber(en);
-            //    results.Add(result);
-            //    _cache[en] = result;
-
-            //    await Task.Delay(700); // rate-limit
-            //}
-
             return PartialView("_Results", results);
         }
         [HttpPost]
