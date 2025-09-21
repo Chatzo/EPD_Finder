@@ -2,7 +2,25 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">EPD Sökare</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@{
+    ViewData["Title"] = "EPD Finder";
+}
+
+<h1 class="text-center mb-5">EPD Finder</h1>
+<form id="epdForm" enctype="multipart/form-data" class="mb-3">
+    <label>Ladda upp fil (Excel/CSV):</label><br />
+    <input type="file" name="file" accept=".csv,.xlsx" /><br /><br />
+
+    <label>Eller ange E-nummer (radbrytning, komma eller semikolon):</label><br />
+    <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
+0000820
+0055270">
+</textarea>
+    <br />
+    <button type="submit">Sök EPD-länkar</button>
+</form>
+<div class="mt-5">
+    <hr />
+    <div id="results"></div>
 </div>
+

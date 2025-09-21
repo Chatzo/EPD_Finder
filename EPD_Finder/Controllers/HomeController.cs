@@ -10,7 +10,6 @@ namespace EPD_Finder.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IEpdService _epdService;
-        private static readonly Dictionary<string, ArticleResult> _cache = new();
         public HomeController(ILogger<HomeController> logger, IEpdService epdService)
         {
             _logger = logger;
@@ -26,40 +25,45 @@ namespace EPD_Finder.Controllers
         {
             var list = _epdService.ParseInput(eNumbers, file);
 
-            var results = new List<ArticleResult>();
-            foreach (var en in list)
+            if (!list.Any())
+                return PartialView("_Results", new List<ArticleResult>());
+
+            List<ArticleResult> results = new List<ArticleResult>();
+            foreach (string num in list)
             {
-                if (_cache.ContainsKey(en))
-                {
-                    results.Add(_cache[en]);
-                    continue;
-                }
-
-                var result = await _epdService.ScrapeEnumber(en);
-                results.Add(result);
-                _cache[en] = result;
-
-                await Task.Delay(700); // rate-limit
+                ArticleResult res = await _epdService.GetEpdLinkByEnumberAsync(num);
+                if (res != null)
+                    results.Add(res);
             }
+            //foreach (var en in list)
+            //{
+            //    if (_cache.ContainsKey(en))
+            //    {
+            //        results.Add(_cache[en]);
+            //        continue;
+            //    }
 
-            return View(results);
+            //    var result = await _epdService.ScrapeEnumber(en);
+            //    results.Add(result);
+            //    _cache[en] = result;
+
+            //    await Task.Delay(700); // rate-limit
+            //}
+
+            return PartialView("_Results", results);
         }
         [HttpPost]
         public IActionResult DownloadExcel(List<ArticleResult> results)
         {
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("EPD Links");
-            ws.Cell(1, 1).Value = "ArtNr";
-            ws.Cell(1, 2).Value = "E-nummer";
-            ws.Cell(1, 3).Value = "EPD-länkar";
-            ws.Cell(1, 4).Value = "Status";
+            ws.Cell(1, 1).Value = "E-nummer";
+            ws.Cell(1, 2).Value = "EPD-länk";
 
             for (int i = 0; i < results.Count; i++)
             {
-                ws.Cell(i + 2, 1).Value = results[i].ArticleNumber;
-                ws.Cell(i + 2, 2).Value = results[i].ENumber;
-                ws.Cell(i + 2, 3).Value = string.Join(" ; ", results[i].EpdLinks);
-                ws.Cell(i + 2, 4).Value = results[i].Status;
+                ws.Cell(i + 2, 1).Value = results[i].ENumber;
+                ws.Cell(i + 2, 2).Value = results[i].EpdLink;
             }
 
             using var stream = new MemoryStream();
