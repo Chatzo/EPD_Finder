@@ -14,7 +14,7 @@ namespace EPD_Finder
             builder.Services.AddHttpClient<IEpdService, EpdService>()
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
             {
-                AllowAutoRedirect = false
+                AllowAutoRedirect = true
             });
 
             var app = builder.Build();

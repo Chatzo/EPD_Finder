@@ -17,4 +17,17 @@
             }
         });
     });
+
+    $("#results").on("click", ".copyBtn", function () {
+        var btn = $(this);
+        var link = btn.closest("td").find("a.epdLink").attr("href");
+
+        navigator.clipboard.writeText(link).then(function () {
+            // Visa checkmark
+            var check = btn.find(".copyCheck");
+            check.stop(true, true).fadeIn(200).delay(1000).fadeOut(200);
+        }).catch(function (err) {
+            console.error("Kunde inte kopiera: ", err);
+        });
+    });
 });

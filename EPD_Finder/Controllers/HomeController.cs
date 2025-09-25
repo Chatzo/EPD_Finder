@@ -31,12 +31,25 @@ namespace EPD_Finder.Controllers
             List<ArticleResult> results = new List<ArticleResult>();
             foreach (string num in list)
             {
-                var epdLink = await _epdService.TryGetEpdLink(num);
-                var res = new ArticleResult
+                ArticleResult res;
+                try
                 {
-                    ENumber = num,
-                    EpdLink = epdLink
-                };
+                    var epdLink = await _epdService.TryGetEpdLink(num);
+                    res = new ArticleResult
+                    {
+                        ENumber = num,
+                        EpdLink = epdLink
+                    };
+                }
+                catch
+                {
+                    res = new ArticleResult
+                    {
+                        ENumber = num,
+                        EpdLink = "Ej hittad"
+                    };
+                }
+                
                 results.Add(res);
             }
             return PartialView("_Results", results);
