@@ -4,7 +4,7 @@
     initCopyButtons();
 });
 
-// Global counter
+// Global counters
 var totalLinks = 0;
 var foundLinks = 0;
 var failedLinks = 0;
@@ -15,8 +15,10 @@ function initInputSwitch() {
         if ($(this).val() === "file") {
             $("#fileInputDiv").show();
             $("#textInputDiv").hide();
+            $("#textInputDiv textarea").val("");
         } else {
             $("#fileInputDiv").hide();
+            $("#fileInputDiv input[type='file']").val("");
             $("#textInputDiv").show();
         }
     });
@@ -28,7 +30,7 @@ function initFormSubmit() {
         e.preventDefault();
         $("#results").empty();
         $("#resultsInput").val("[]");
-        $("#linksCounter").remove();
+        $("#linksCounter").html("");
 
         var formData = new FormData(this);
         $.ajax({
@@ -41,9 +43,7 @@ function initFormSubmit() {
                 totalLinks = res.eNumbers.length;
                 foundLinks = 0;
                 failedLinks = 0;
-                // Add counter display
-                $("#epdForm").after(`<div id="linksCounter" class="mt-2"></div>`);
-                updateCounter();
+                updateLoadingbar();
                 preCreateRows(res.eNumbers, res.jobId);
             },
             error: function (xhr) {
@@ -56,6 +56,10 @@ function initFormSubmit() {
 
 // Pre-create table rows
 function preCreateRows(eNumbers, jobId) {
+    $("#outputTable").show();
+    $("#loadingContainer").show();
+    $("#linksCounter").show();
+
     eNumbers.forEach(num => {
         var row = $("<tr>").attr("data-enumber", num);
         row.append($("<td>").text(num));
@@ -93,8 +97,7 @@ function startSSE(jobId) {
             row.find("td:last").text(result.EpdLink).css("color", "red");
         }
 
-        // Update counter with colors
-        updateCounter();
+        updateLoadingbar()
 
         // Update hidden input
         var existing = $("#resultsInput").val();
@@ -105,7 +108,7 @@ function startSSE(jobId) {
 
     evtSource.addEventListener("done", function () {
         evtSource.close();
-        $("#linksCounter").append("<strong>( Sökning slutförd ✅ )</strong>");
+        $("#progressText").append("( Sökning slutförd ✅ )");
         $("#downloadForm").show();
     });
 
@@ -115,15 +118,49 @@ function startSSE(jobId) {
     };
 }
 
-// Update counter display
-function updateCounter() {
-    $("#linksCounter").html(`
-        <hr/>
-        <span style="margin-right: 15px;"><strong>Sökresultat från ${totalLinks} e-nummer: </strong></span>
-        <span style="color:green; margin-right: 15px;"><strong>Hittade: ${foundLinks}</strong></span>
-        <span style="color:red; margin-right: 15px;"><strong>Misslyckade: ${failedLinks}</strong></span>
+function updateLoadingbar() {
+
+    var percent = Math.round(((foundLinks + failedLinks) / totalLinks) * 100);
+    $("#progressBar").css("width", percent + "%");
+    $("#progressBarText").text(`${percent} %`);
+    $("#progressText").html(`
+        <span style="margin-right: 15px;">Hämtade ${foundLinks + failedLinks} av ${totalLinks} länkar</span>
+        <span style="color:green; margin-right: 15px;">Hittade: ${foundLinks}</span>
+        <span style="color:red; margin-right: 15px;">Misslyckade: ${failedLinks}</span>
     `);
 }
+$("#downloadExcelForm").submit(function (e) {
+    e.preventDefault();
+    var data = collectResultsFromTable();
+
+    $.ajax({
+        url: "/Home/DownloadExcel",
+        type: "POST",
+        contentType: "application/json",
+        data: data,
+        xhrFields: { responseType: 'blob' },
+        success: function (blob) {
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = "epd_links.xlsx";
+            link.click();
+        },
+        error: function () {
+            alert("Fel vid skapande av Excel-fil");
+        }
+    });
+});
+function collectResultsFromTable() {
+    var arr = [];
+    $("#results tr").each(function () {
+        var en = $(this).find("td:first").text().trim();
+        var link = $(this).find("td:last a").attr("href") || $(this).find("td:last").text().trim();
+        arr.push({ ENumber: en, EpdLink: link });
+    });
+    return JSON.stringify(arr);
+}
+
+
 
 // Copy buttons
 function initCopyButtons() {

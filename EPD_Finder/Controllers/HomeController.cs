@@ -3,7 +3,6 @@ using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace EPD_Finder.Controllers
@@ -82,9 +81,8 @@ namespace EPD_Finder.Controllers
 
 
         [HttpPost]
-        public IActionResult DownloadExcel(string results)
+        public IActionResult DownloadExcel([FromBody] List<ArticleResult> list)
         {
-            var list = System.Text.Json.JsonSerializer.Deserialize<List<ArticleResult>>(results);
 
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("EPD Links");

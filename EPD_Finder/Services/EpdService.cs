@@ -1,6 +1,5 @@
 ﻿using EPD_Finder.Services.IServices;
 using HtmlAgilityPack;
-using Microsoft.Playwright;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -38,9 +37,10 @@ namespace EPD_Finder.Services
                     using var reader = new StreamReader(stream);
                     while (!reader.EndOfStream)
                     {
-                        var line = reader.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(line))
-                            list.Add(line.Trim());
+                        var line = reader.ReadLine()?.Trim();
+                        if (string.IsNullOrWhiteSpace(line)) continue; //skip if null or empty
+                        if (!line.Any(char.IsDigit)) continue; // Skip lines without digits
+                        list.Add(line);
                     }
                 }
                 else if (file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
@@ -49,9 +49,10 @@ namespace EPD_Finder.Services
                     var ws = workbook.Worksheets.First();
                     foreach (var row in ws.RowsUsed())
                     {
-                        var val = row.Cell(1).GetValue<string>();
-                        if (!string.IsNullOrWhiteSpace(val))
-                            list.Add(val.Trim());
+                        var val = row.Cell(1).GetValue<string>().Trim();
+                        if (string.IsNullOrWhiteSpace(val)) continue; //skip if null or empty
+                        if (!val.Any(char.IsDigit)) continue; // Skip rows without digits
+                        list.Add(val);
                     }
                 }
             }
@@ -61,7 +62,7 @@ namespace EPD_Finder.Services
 
         public async Task<string> TryGetEpdLink(string eNumber)
         {
-            //from AHlsell
+            //from Ahlsell
             string pdfUrl = await TryGetAhlsellEpdLink(eNumber);
             if (await IsLinkValid(pdfUrl))
             {
@@ -80,7 +81,6 @@ namespace EPD_Finder.Services
         {
             try
             {
-                // Check if the link exists
                 var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                 if (response.IsSuccessStatusCode)
                 {
@@ -121,11 +121,9 @@ namespace EPD_Finder.Services
                 return null;
             }
 
-            // 2. Parse HTML
             var searchDoc = new HtmlDocument();
             searchDoc.LoadHtml(searchHtml);
 
-            // 3. Hitta första produktlänk
             var productNode = searchDoc.DocumentNode.SelectSingleNode("//a[contains(@href, '/products/')]");
             if (productNode == null)
             {
@@ -133,7 +131,6 @@ namespace EPD_Finder.Services
                 return null;
             }
 
-            // 4. Returnera full URL till produktsidan
             string productUrl = "https://www.ahlsell.se" + productNode.GetAttributeValue("href", "");
             return productUrl;
         }
@@ -142,7 +139,6 @@ namespace EPD_Finder.Services
             if(string.IsNullOrWhiteSpace(productUrl))
             throw new ArgumentException("Produkt-URL måste anges.", nameof(productUrl));
 
-            // 1. Hämta produktsidan
             string productHtml;
             try
             {
@@ -154,11 +150,9 @@ namespace EPD_Finder.Services
                 return null;
             }
 
-            // 2. Parse HTML
             var productDoc = new HtmlDocument();
             productDoc.LoadHtml(productHtml);
 
-            // 3. Leta efter EPD-länk (länk som innehåller 'infoDocs/EPD')
             var epdNode = productDoc.DocumentNode
                 .SelectSingleNode("//a[contains(@href, 'infoDocs/EPD')]");
 

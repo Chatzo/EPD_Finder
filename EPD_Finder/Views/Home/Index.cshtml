@@ -20,32 +20,43 @@
 
     <!-- Div för manuellt inmatning -->
     <div id="textInputDiv">
-        <label class="mb-0 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label><br />
+        <label class="mb-1 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label>
         <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
 0000820
-0055270"></textarea>
+0055270"
+        @* oninvalid="this.setCustomValidity('Vänligen mata in minst ett E-nummer')"
+        oninput="this.setCustomValidity('')" *@></textarea>
     </div>
 
     <!-- Div för filuppladdning -->
     <div id="fileInputDiv" style="display:none;">
-        <label class="mb-0 fw-bold fs-3">Ladda upp fil (Excel/CSV):</label><br />
-        <input type="file" name="file" accept=".csv,.xlsx" /><br /><br />
+        <label class="mb-1 fw-bold fs-3">Ladda upp fil (Excel/CSV):</label><br />
+        
+        <input type="file" name="file" accept=".csv,.xlsx"
+        @* oninvalid="this.setCustomValidity('Vänligen välj en fil eller byt inmatningsmetod')"
+        oninput="this.setCustomValidity('')"  *@/>
     </div>
 
-    <div class="mt-2">
-        <button type="submit">Sök EPD-länkar</button>
+    <div class="mt-4">
+        <button class="btn w-15 btn-success" type="submit">Sök EPD-länkar</button>
     </div>
 
 </form>
+<div id="loadingContainer" style="display:none; margin: 10px 0;">
+    <div style="background-color: gray; border-radius: 10px; padding: 3px; position: relative;">
+        <span id="progressBarText" class="fw-bold" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white;">></span>
+        <div id="progressBar" class="bg-success"style="width: 0%; height: 15px; border-radius: 7px;"></div>
+    </div>
+    <div id="progressText" class="fw-bold" style="margin-top:5px;"></div>
+</div>
+
 <div id="downloadForm" style="display:none;">
-    <br />
-    <form id="downloadExcelForm" method="post" action="/Home/DownloadExcel">
-        <input type="hidden" name="results" id="resultsInput" />
-        <button type="submit">Spara som Excel-fil</button>
+    <form id="downloadExcelForm">
+        <button class="btn btn-warning" type="submit">Spara som Excel-fil</button>
     </form>
 </div>
 
-<div class="mt-5">
+<div id="outputTable" class="mt-5" style="display:none;">
     <hr />
     <table class="table mt-3">
         <thead>
