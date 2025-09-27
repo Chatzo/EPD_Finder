@@ -68,61 +68,61 @@ namespace EPD_Finder.Services
                 return pdfUrl;
             }
             //from e-nummersok
-            pdfUrl = await TryGetEnummersokEpdLink(eNumber);
-            if (await IsLinkValid(pdfUrl))
-            {
-                return pdfUrl;
-            }
+            //pdfUrl = await TryGetEnummersokEpdLink(eNumber);
+            //if (await IsLinkValid(pdfUrl))
+            //{
+            //    return pdfUrl;
+            //}
             throw new ArgumentException("Ej hittad");
         }
-        private async Task<string> GetEnummersokUrl(string eNumber)
-        {
-            if (string.IsNullOrWhiteSpace(eNumber))
-                return null;
+        //private async Task<string> GetEnummersokUrl(string eNumber)
+        //{
+        //    if (string.IsNullOrWhiteSpace(eNumber))
+        //        return null;
 
-            try
-            {
-                string apiUrl = $"https://www.e-nummersok.se/ApiSearch/Suggest?ActiveOnly=true&PicsOnly=true&Query={eNumber}&Sort=1";
-                var response = await _client.GetStringAsync(apiUrl);
+        //    try
+        //    {
+        //        string apiUrl = $"https://www.e-nummersok.se/ApiSearch/Suggest?ActiveOnly=true&PicsOnly=true&Query={eNumber}&Sort=1";
+        //        var response = await _client.GetStringAsync(apiUrl);
 
-                using var doc = JsonDocument.Parse(response);
-                var root = doc.RootElement;
+        //        using var doc = JsonDocument.Parse(response);
+        //        var root = doc.RootElement;
 
-                if (root.GetProperty("Status").GetString() != "OK")
-                    return null;
+        //        if (root.GetProperty("Status").GetString() != "OK")
+        //            return null;
 
-                var suggestions = root.GetProperty("Data").GetProperty("ProductSuggestionRows");
-                if (suggestions.GetArrayLength() == 0)
-                    return null;
+        //        var suggestions = root.GetProperty("Data").GetProperty("ProductSuggestionRows");
+        //        if (suggestions.GetArrayLength() == 0)
+        //            return null;
 
-                var firstProduct = suggestions[0];
-                string url = firstProduct.GetProperty("Url").GetString()!;
-                return url;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fel vid hämtning av URL för e-nummer {Enummer}", eNumber);
-                return null;
-            }
-        }
+        //        var firstProduct = suggestions[0];
+        //        string url = firstProduct.GetProperty("Url").GetString()!;
+        //        return url;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Fel vid hämtning av URL för e-nummer {Enummer}", eNumber);
+        //        return null;
+        //    }
+        //}
 
-        private async Task<string?> GetSupplierIdFromEnumberWithAsync(string url, string eNumber)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-                return null;
+        //private async Task<string?> GetSupplierIdFromEnumberWithAsync(string url, string eNumber)
+        //{
+        //    if (string.IsNullOrWhiteSpace(url))
+        //        return null;
 
-            try
-            {
-                // Plocka ut sista numret i urlen med regex
-                var match = Regex.Match(url, @"-(\d+)$");
-                return match.Success ? match.Groups[1].Value : null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fel vid hämtning av sista numret från produkt-URL för e-nummer {Enummer}", eNumber);
-                return null;
-            }
-        }
+        //    try
+        //    {
+        //        // Plocka ut sista numret i urlen med regex
+        //        var match = Regex.Match(url, @"-(\d+)$");
+        //        return match.Success ? match.Groups[1].Value : null;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Fel vid hämtning av sista numret från produkt-URL för e-nummer {Enummer}", eNumber);
+        //        return null;
+        //    }
+        //}
 
         private async Task<bool> IsLinkValid(string url)
         {
@@ -144,20 +144,20 @@ namespace EPD_Finder.Services
                 return false;
             }
         }
-        private async Task<string> TryGetEnummersokEpdLink(string eNumber)
-        {
-            var url = await GetEnummersokUrl(eNumber);
-            var supplierID = await GetSupplierIdFromEnumberWithAsync(url, eNumber);
-            if (supplierID == null)
-                throw new ArgumentException("Ej hittad");
-            string pdfUrl = $"{BaseUrl}EPD_{supplierID}_{eNumber}.pdf";
-            if (await IsLinkValid(pdfUrl))
-            {
-                return pdfUrl;
-            }
-            pdfUrl = $"{BaseUrl}EPD_{eNumber}.pdf";
-            return pdfUrl;
-        }
+        //private async Task<string> TryGetEnummersokEpdLink(string eNumber)
+        //{
+        //    var url = await GetEnummersokUrl(eNumber);
+        //    var supplierID = await GetSupplierIdFromEnumberWithAsync(url, eNumber);
+        //    if (supplierID == null)
+        //        throw new ArgumentException("Ej hittad");
+        //    string pdfUrl = $"{BaseUrl}EPD_{supplierID}_{eNumber}.pdf";
+        //    if (await IsLinkValid(pdfUrl))
+        //    {
+        //        return pdfUrl;
+        //    }
+        //    pdfUrl = $"{BaseUrl}EPD_{eNumber}.pdf";
+        //    return pdfUrl;
+        //}
         private async Task<string> TryGetAhlsellEpdLink(string eNumber)
         {
             string productUrl = await TryGetAhlsellProductUrl(eNumber);

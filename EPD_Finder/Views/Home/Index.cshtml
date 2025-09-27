@@ -1,26 +1,57 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
-}
-
-@{
     ViewData["Title"] = "EPD Finder";
 }
 
 <h1 class="text-center mb-5">EPD Finder</h1>
-<form id="epdForm" enctype="multipart/form-data" class="mb-3">
-    <label>Ladda upp fil (Excel/CSV):</label><br />
-    <input type="file" name="file" accept=".csv,.xlsx" /><br /><br />
 
-    <label>Eller ange E-nummer (radbrytning, komma eller semikolon):</label><br />
-    <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
+<form id="epdForm" enctype="multipart/form-data" class="mb-3">
+
+    <label class="mb-0 fw-bold fs-3">Välj sökmetod:</label><br />
+    <div style="display:flex; gap:20px; margin-bottom:20px;">
+        <label>
+            <input type="radio" name="inputType" value="text" checked />
+            Mata in manuellt
+        </label>
+        <label>
+            <input type="radio" name="inputType" value="file" />
+            Ladda upp Excelfil
+        </label>
+    </div>
+
+    <!-- Div för manuellt inmatning -->
+    <div id="textInputDiv">
+        <label class="mb-0 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label><br />
+        <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
 0000820
-0055270">
-</textarea>
-    <br />
-    <button type="submit">Sök EPD-länkar</button>
+0055270"></textarea>
+    </div>
+
+    <!-- Div för filuppladdning -->
+    <div id="fileInputDiv" style="display:none;">
+        <label class="mb-0 fw-bold fs-3">Ladda upp fil (Excel/CSV):</label><br />
+        <input type="file" name="file" accept=".csv,.xlsx" /><br /><br />
+    </div>
+
+    <div class="mt-2">
+        <button type="submit">Sök EPD-länkar</button>
+    </div>
+
 </form>
+
 <div class="mt-5">
     <hr />
-    <div id="results"></div>
-</div>
+    <form id="downloadForm" method="post" action="/Home/DownloadExcel">
+        <input type="hidden" name="results" id="resultsInput" />
+        <button type="submit">Spara som Excel-fil</button>
+    </form>
 
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>ArtNr</th>
+                <th>EPD-länkar</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+</div>

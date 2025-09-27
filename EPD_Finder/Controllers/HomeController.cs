@@ -2,6 +2,8 @@ using ClosedXML.Excel;
 using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace EPD_Finder.Controllers
@@ -10,6 +12,7 @@ namespace EPD_Finder.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IEpdService _epdService;
+        private static ConcurrentDictionary<string, List<string>> _jobs = new();
         public HomeController(ILogger<HomeController> logger, IEpdService epdService)
         {
             _logger = logger;
@@ -20,59 +23,83 @@ namespace EPD_Finder.Controllers
         {
             return View();
         }
+
         [HttpPost]
-        public async Task<IActionResult> Results(string eNumbers, IFormFile file)
+        public IActionResult CreateJob(IFormFile file, string eNumbers)
         {
             var list = _epdService.ParseInput(eNumbers, file);
+            if (!list.Any()) return BadRequest("Inga E-nummer hittades.");
 
-            if (!list.Any())
-                return PartialView("_Results", new List<ArticleResult>());
+            var jobId = Guid.NewGuid().ToString();
+            _jobs[jobId] = list;
 
-            List<ArticleResult> results = new List<ArticleResult>();
-            foreach (string num in list)
+            return Ok(new { jobId });
+        }
+
+        [HttpGet]
+        public async Task GetResultsStream(string jobId)
+        {
+            if (string.IsNullOrWhiteSpace(jobId) || !_jobs.TryGetValue(jobId, out var list))
             {
-                ArticleResult res;
+                Response.StatusCode = 400; // Bad Request
+                await Response.WriteAsync("Invalid or missing jobId");
+                return;
+            }
+
+            Response.ContentType = "text/event-stream";
+            Response.Headers.Add("Cache-Control", "no-cache");
+
+            var tasks = list.Select(async num =>
+            {
                 try
                 {
                     var epdLink = await _epdService.TryGetEpdLink(num);
-                    res = new ArticleResult
-                    {
-                        ENumber = num,
-                        EpdLink = epdLink
-                    };
+                    return new ArticleResult { ENumber = num, EpdLink = epdLink };
                 }
                 catch
                 {
-                    res = new ArticleResult
-                    {
-                        ENumber = num,
-                        EpdLink = "Ej hittad"
-                    };
+                    return new ArticleResult { ENumber = num, EpdLink = "Ej hittad" };
                 }
-                
-                results.Add(res);
-            }
-            return PartialView("_Results", results);
-        }
-        [HttpPost]
-        public IActionResult DownloadExcel(List<ArticleResult> results)
-        {
-            using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add("EPD Links");
-            ws.Cell(1, 1).Value = "E-nummer";
-            ws.Cell(1, 2).Value = "EPD-länk";
+            }).ToList();
 
-            for (int i = 0; i < results.Count; i++)
+            while (tasks.Any())
             {
-                ws.Cell(i + 2, 1).Value = results[i].ENumber;
-                ws.Cell(i + 2, 2).Value = results[i].EpdLink;
+                var finished = await Task.WhenAny(tasks);
+                tasks.Remove(finished);
+
+                var result = await finished;
+                var json = System.Text.Json.JsonSerializer.Serialize(result);
+                await Response.WriteAsync($"data: {json}\n\n");
+                await Response.Body.FlushAsync();
             }
 
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream);
-            stream.Position = 0;
-            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "epd_links.xlsx");
+            await Response.WriteAsync("event: done\ndata: complete\n\n");
+            await Response.Body.FlushAsync();
+
+            _jobs.TryRemove(jobId, out _);
         }
+
+
+
+        //[HttpPost]
+        //public IActionResult DownloadExcel(List<ArticleResult> results)
+        //{
+        //    using var workbook = new XLWorkbook();
+        //    var ws = workbook.Worksheets.Add("EPD Links");
+        //    ws.Cell(1, 1).Value = "E-nummer";
+        //    ws.Cell(1, 2).Value = "EPD-länk";
+
+        //    for (int i = 0; i < results.Count; i++)
+        //    {
+        //        ws.Cell(i + 2, 1).Value = results[i].ENumber;
+        //        ws.Cell(i + 2, 2).Value = results[i].EpdLink;
+        //    }
+
+        //    using var stream = new MemoryStream();
+        //    workbook.SaveAs(stream);
+        //    stream.Position = 0;
+        //    return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "epd_links.xlsx");
+        //}
         public IActionResult Privacy()
         {
             return View();
