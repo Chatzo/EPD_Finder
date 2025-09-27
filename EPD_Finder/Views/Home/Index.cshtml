@@ -1,26 +1,70 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
-}
-
-@{
     ViewData["Title"] = "EPD Finder";
 }
 
 <h1 class="text-center mb-5">EPD Finder</h1>
-<form id="epdForm" enctype="multipart/form-data" class="mb-3">
-    <label>Ladda upp fil (Excel/CSV):</label><br />
-    <input type="file" name="file" accept=".csv,.xlsx" /><br /><br />
 
-    <label>Eller ange E-nummer (radbrytning, komma eller semikolon):</label><br />
-    <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
+<form id="epdForm" enctype="multipart/form-data" class="mb-3">
+
+    <label class="mb-0 fw-bold fs-3">Välj sökmetod:</label><br />
+    <div style="display:flex; gap:20px; margin-bottom:20px;">
+        <label>
+            <input type="radio" name="inputType" value="text" checked />
+            Mata in manuellt
+        </label>
+        <label>
+            <input type="radio" name="inputType" value="file" />
+            Ladda upp Excelfil
+        </label>
+    </div>
+
+    <!-- Div för manuellt inmatning -->
+    <div id="textInputDiv">
+        <label class="mb-1 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label>
+        <textarea name="eNumbers" rows="5" style="width:50%;" placeholder="0017720
 0000820
-0055270">
-</textarea>
-    <br />
-    <button type="submit">Sök EPD-länkar</button>
+0055270"
+        @* oninvalid="this.setCustomValidity('Vänligen mata in minst ett E-nummer')"
+        oninput="this.setCustomValidity('')" *@></textarea>
+    </div>
+
+    <!-- Div för filuppladdning -->
+    <div id="fileInputDiv" style="display:none;">
+        <label class="mb-1 fw-bold fs-3">Ladda upp fil (Excel/CSV):</label><br />
+        
+        <input type="file" name="file" accept=".csv,.xlsx"
+        @* oninvalid="this.setCustomValidity('Vänligen välj en fil eller byt inmatningsmetod')"
+        oninput="this.setCustomValidity('')"  *@/>
+    </div>
+
+    <div class="mt-4">
+        <button class="btn w-15 btn-success" type="submit">Sök EPD-länkar</button>
+    </div>
+
 </form>
-<div class="mt-5">
-    <hr />
-    <div id="results"></div>
+<div id="loadingContainer" style="display:none; margin: 10px 0;">
+    <div style="background-color: gray; border-radius: 10px; padding: 3px; position: relative;">
+        <span id="progressBarText" class="fw-bold" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white;">></span>
+        <div id="progressBar" class="bg-success"style="width: 0%; height: 15px; border-radius: 7px;"></div>
+    </div>
+    <div id="progressText" class="fw-bold" style="margin-top:5px;"></div>
 </div>
 
+<div id="downloadForm" style="display:none;">
+    <form id="downloadExcelForm">
+        <button class="btn btn-warning" type="submit">Spara som Excel-fil</button>
+    </form>
+</div>
+
+<div id="outputTable" class="mt-5" style="display:none;">
+    <hr />
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>ArtNr</th>
+                <th>EPD-länkar</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+</div>

@@ -1,4 +1,4 @@
-﻿@model List<EPD_Finder.Models.ArticleResult>
+﻿@* @model List<EPD_Finder.Models.ArticleResult>
 
 <form asp-action="DownloadExcel" method="post">
     @foreach (var result in Model)
@@ -38,3 +38,4 @@
         }
     </tbody>
 </table>
+ *@

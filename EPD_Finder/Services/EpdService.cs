@@ -1,6 +1,5 @@
 ﻿using EPD_Finder.Services.IServices;
 using HtmlAgilityPack;
-using Microsoft.Playwright;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -38,9 +37,10 @@ namespace EPD_Finder.Services
                     using var reader = new StreamReader(stream);
                     while (!reader.EndOfStream)
                     {
-                        var line = reader.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(line))
-                            list.Add(line.Trim());
+                        var line = reader.ReadLine()?.Trim();
+                        if (string.IsNullOrWhiteSpace(line)) continue; //skip if null or empty
+                        if (!line.Any(char.IsDigit)) continue; // Skip lines without digits
+                        list.Add(line);
                     }
                 }
                 else if (file.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
@@ -49,9 +49,10 @@ namespace EPD_Finder.Services
                     var ws = workbook.Worksheets.First();
                     foreach (var row in ws.RowsUsed())
                     {
-                        var val = row.Cell(1).GetValue<string>();
-                        if (!string.IsNullOrWhiteSpace(val))
-                            list.Add(val.Trim());
+                        var val = row.Cell(1).GetValue<string>().Trim();
+                        if (string.IsNullOrWhiteSpace(val)) continue; //skip if null or empty
+                        if (!val.Any(char.IsDigit)) continue; // Skip rows without digits
+                        list.Add(val);
                     }
                 }
             }
@@ -61,7 +62,7 @@ namespace EPD_Finder.Services
 
         public async Task<string> TryGetEpdLink(string eNumber)
         {
-            //from AHlsell
+            //from Ahlsell
             string pdfUrl = await TryGetAhlsellEpdLink(eNumber);
             if (await IsLinkValid(pdfUrl))
             {
@@ -74,6 +75,108 @@ namespace EPD_Finder.Services
                 return pdfUrl;
             }
             throw new ArgumentException("Ej hittad");
+        }
+
+        private async Task<bool> IsLinkValid(string url)
+        {
+            try
+            {
+                var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task<string> TryGetAhlsellEpdLink(string eNumber)
+        {
+            string productUrl = await TryGetAhlsellProductUrl(eNumber);
+            string epdUrl = await TryGetEPDLinkFromAhlsellProductPage(productUrl);
+            return epdUrl;
+        }
+        private async Task<string> TryGetAhlsellProductUrl(string eNumber)
+        {
+            if (string.IsNullOrWhiteSpace(eNumber))
+                throw new ArgumentException("E-nummer måste anges.", nameof(eNumber));
+
+            string quickSearchUrl = $"https://www.ahlsell.se/QuickSearch?parameters.SearchPhrase={eNumber}";
+
+            string searchHtml;
+            try
+            {
+                searchHtml = await _client.GetStringAsync(quickSearchUrl);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError($"Fel vid hämtning av sökresultat: {ex.Message}");
+                return null;
+            }
+
+            var searchDoc = new HtmlDocument();
+            searchDoc.LoadHtml(searchHtml);
+
+            var productNode = searchDoc.DocumentNode.SelectSingleNode("//a[contains(@href, '/products/')]");
+            if (productNode == null)
+            {
+                _logger.LogError("Ingen produkt hittades i sökresultatet.");
+                return null;
+            }
+
+            string productUrl = "https://www.ahlsell.se" + productNode.GetAttributeValue("href", "");
+            return productUrl;
+        }
+        private async Task<string> TryGetEPDLinkFromAhlsellProductPage(string productUrl)
+        {
+            if(string.IsNullOrWhiteSpace(productUrl))
+            throw new ArgumentException("Produkt-URL måste anges.", nameof(productUrl));
+
+            string productHtml;
+            try
+            {
+                productHtml = await _client.GetStringAsync(productUrl);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError($"Fel vid hämtning av produktsidan: {ex.Message}");
+                return null;
+            }
+
+            var productDoc = new HtmlDocument();
+            productDoc.LoadHtml(productHtml);
+
+            var epdNode = productDoc.DocumentNode
+                .SelectSingleNode("//a[contains(@href, 'infoDocs/EPD')]");
+
+            if (epdNode != null)
+            {
+                string epdUrl = epdNode.GetAttributeValue("href", "");
+                return epdUrl.StartsWith("http") ? epdUrl : "https://www.e-nummersok.se" + epdUrl;
+            }
+            _logger.LogError("Ingen EPD-länk hittades på produktsidan.");
+            return null;
+        }
+        private async Task<string> TryGetEnummersokEpdLink(string eNumber)
+        {
+            var url = await GetEnummersokUrl(eNumber);
+            var supplierID = await GetSupplierIdFromEnumberWithAsync(url, eNumber);
+            if (supplierID == null)
+                throw new ArgumentException("Ej hittad");
+            string pdfUrl = $"{BaseUrl}EPD_{supplierID}_{eNumber}.pdf";
+            if (await IsLinkValid(pdfUrl))
+            {
+                return pdfUrl;
+            }
+            pdfUrl = $"{BaseUrl}EPD_{eNumber}.pdf";
+            return pdfUrl;
         }
         private async Task<string> GetEnummersokUrl(string eNumber)
         {
@@ -122,114 +225,6 @@ namespace EPD_Finder.Services
                 _logger.LogError(ex, "Fel vid hämtning av sista numret från produkt-URL för e-nummer {Enummer}", eNumber);
                 return null;
             }
-        }
-
-        private async Task<bool> IsLinkValid(string url)
-        {
-            try
-            {
-                // Check if the link exists
-                var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
-                if (response.IsSuccessStatusCode)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        private async Task<string> TryGetEnummersokEpdLink(string eNumber)
-        {
-            var url = await GetEnummersokUrl(eNumber);
-            var supplierID = await GetSupplierIdFromEnumberWithAsync(url, eNumber);
-            if (supplierID == null)
-                throw new ArgumentException("Ej hittad");
-            string pdfUrl = $"{BaseUrl}EPD_{supplierID}_{eNumber}.pdf";
-            if (await IsLinkValid(pdfUrl))
-            {
-                return pdfUrl;
-            }
-            pdfUrl = $"{BaseUrl}EPD_{eNumber}.pdf";
-            return pdfUrl;
-        }
-        private async Task<string> TryGetAhlsellEpdLink(string eNumber)
-        {
-            string productUrl = await TryGetAhlsellProductUrl(eNumber);
-            string epdUrl = await TryGetEPDLinkFromAhlsellProductPage(productUrl);
-            return epdUrl;
-        }
-        private async Task<string> TryGetAhlsellProductUrl(string eNumber)
-        {
-            if (string.IsNullOrWhiteSpace(eNumber))
-                throw new ArgumentException("E-nummer måste anges.", nameof(eNumber));
-
-            string quickSearchUrl = $"https://www.ahlsell.se/QuickSearch?parameters.SearchPhrase={eNumber}";
-
-            string searchHtml;
-            try
-            {
-                searchHtml = await _client.GetStringAsync(quickSearchUrl);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError($"Fel vid hämtning av sökresultat: {ex.Message}");
-                return null;
-            }
-
-            // 2. Parse HTML
-            var searchDoc = new HtmlDocument();
-            searchDoc.LoadHtml(searchHtml);
-
-            // 3. Hitta första produktlänk
-            var productNode = searchDoc.DocumentNode.SelectSingleNode("//a[contains(@href, '/products/')]");
-            if (productNode == null)
-            {
-                _logger.LogError("Ingen produkt hittades i sökresultatet.");
-                return null;
-            }
-
-            // 4. Returnera full URL till produktsidan
-            string productUrl = "https://www.ahlsell.se" + productNode.GetAttributeValue("href", "");
-            return productUrl;
-        }
-        private async Task<string> TryGetEPDLinkFromAhlsellProductPage(string productUrl)
-        {
-            if(string.IsNullOrWhiteSpace(productUrl))
-            throw new ArgumentException("Produkt-URL måste anges.", nameof(productUrl));
-
-            // 1. Hämta produktsidan
-            string productHtml;
-            try
-            {
-                productHtml = await _client.GetStringAsync(productUrl);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError($"Fel vid hämtning av produktsidan: {ex.Message}");
-                return null;
-            }
-
-            // 2. Parse HTML
-            var productDoc = new HtmlDocument();
-            productDoc.LoadHtml(productHtml);
-
-            // 3. Leta efter EPD-länk (länk som innehåller 'infoDocs/EPD')
-            var epdNode = productDoc.DocumentNode
-                .SelectSingleNode("//a[contains(@href, 'infoDocs/EPD')]");
-
-            if (epdNode != null)
-            {
-                string epdUrl = epdNode.GetAttributeValue("href", "");
-                return epdUrl.StartsWith("http") ? epdUrl : "https://www.e-nummersok.se" + epdUrl;
-            }
-            _logger.LogError("Ingen EPD-länk hittades på produktsidan.");
-            return null;
         }
     }
 }
