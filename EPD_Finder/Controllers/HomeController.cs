@@ -33,7 +33,7 @@ namespace EPD_Finder.Controllers
             var jobId = Guid.NewGuid().ToString();
             _jobs[jobId] = list;
 
-            return Ok(new { jobId });
+            return Ok(new { jobId, eNumbers = list });
         }
 
         [HttpGet]

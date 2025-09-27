@@ -4,7 +4,7 @@
     initCopyButtons();
 });
 
-// Byt mellan text och fil
+// Switch between text input and file input
 function initInputSwitch() {
     $("input[name='inputType']").change(function () {
         if ($(this).val() === "file") {
@@ -24,7 +24,6 @@ function initFormSubmit() {
         $("#results").empty();
         $("#resultsInput").val("[]");
 
-        // Skicka alltid via CreateJob för att få jobId
         var formData = new FormData(this);
         $.ajax({
             url: "/Home/CreateJob",
@@ -33,7 +32,7 @@ function initFormSubmit() {
             processData: false,
             contentType: false,
             success: function (res) {
-                startSSE(res.jobId);
+                preCreateRows(res.eNumbers, res.jobId);
             },
             error: function (xhr) {
                 var msg = xhr.responseJSON?.message || "Fel vid skapande av jobb";
@@ -43,14 +42,48 @@ function initFormSubmit() {
     });
 }
 
-// Starta SSE
+// Pre-create table rows in order
+function preCreateRows(eNumbers, jobId) {
+    eNumbers.forEach(num => {
+        var row = $("<tr>").attr("data-enumber", num);
+        row.append($("<td>").text(num));
+        row.append($("<td>").text("Hämtar...")); // placeholder for EPD link
+        $("#results").append(row);
+    });
+
+    startSSE(jobId);
+}
+
+// Start Server-Sent Events to populate results
 function startSSE(jobId) {
     var url = "/Home/GetResultsStream?jobId=" + jobId;
     var evtSource = new EventSource(url);
 
     evtSource.onmessage = function (e) {
         var result = JSON.parse(e.data);
-        addResultRow(result);
+        var row = $("#results").find(`tr[data-enumber='${result.ENumber}']`);
+        row.find("td:last").empty();
+
+        if (result.EpdLink && result.EpdLink.startsWith("http")) {
+            var cell = $("<td>").css("position", "relative");
+            cell.append(
+                $("<a>").addClass("epdLink").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
+            );
+            cell.append(
+                $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
+                    .append($("<img>").attr("src", "/images/copy.svg"))
+                    .append($("<span>").addClass("copyCheck text-end").text("Kopierat ✔"))
+            );
+            row.find("td:last").replaceWith(cell);
+        } else {
+            row.find("td:last").text(result.EpdLink).css("color", "red");
+        }
+
+        // Update hidden input for Excel export
+        var existing = $("#resultsInput").val();
+        var arr = existing ? JSON.parse(existing) : [];
+        arr.push(result);
+        $("#resultsInput").val(JSON.stringify(arr));
     };
 
     evtSource.addEventListener("done", function () {
@@ -63,35 +96,7 @@ function startSSE(jobId) {
     };
 }
 
-// Lägg till rad i tabellen och uppdatera hidden input
-function addResultRow(result) {
-    var row = $("<tr>");
-    row.append($("<td>").text(result.ENumber));
-
-    if (result.EpdLink && result.EpdLink.startsWith("http")) {
-        var cell = $("<td>").css("position", "relative");
-        cell.append(
-            $("<a>").addClass("epdLink").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
-        );
-        cell.append(
-            $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
-                .append($("<img>").attr("src", "/images/copy.svg"))
-                .append($("<span>").addClass("copyCheck text-end").text("Kopierat ✔"))
-        );
-        row.append(cell);
-    } else {
-        row.append($("<td>").css("color", "red").text(result.EpdLink));
-    }
-
-    $("#results").append(row);
-
-    var existing = $("#resultsInput").val();
-    var arr = existing ? JSON.parse(existing) : [];
-    arr.push(result);
-    $("#resultsInput").val(JSON.stringify(arr));
-}
-
-// Copy-knappar
+// Initialize copy buttons
 function initCopyButtons() {
     $("#results").on("click", ".copyBtn", function () {
         var btn = $(this);
@@ -100,7 +105,7 @@ function initCopyButtons() {
 
         navigator.clipboard.writeText(link).then(function () {
             check.removeClass("show");
-            void check[0].offsetWidth; // reflow för animation
+            void check[0].offsetWidth; // reflow for animation
             check.addClass("show");
         }).catch(function (err) {
             console.error("Kunde inte kopiera: ", err);
