@@ -81,25 +81,40 @@ namespace EPD_Finder.Controllers
 
 
 
-        //[HttpPost]
-        //public IActionResult DownloadExcel(List<ArticleResult> results)
-        //{
-        //    using var workbook = new XLWorkbook();
-        //    var ws = workbook.Worksheets.Add("EPD Links");
-        //    ws.Cell(1, 1).Value = "E-nummer";
-        //    ws.Cell(1, 2).Value = "EPD-länk";
+        [HttpPost]
+        public IActionResult DownloadExcel(string results)
+        {
+            var list = System.Text.Json.JsonSerializer.Deserialize<List<ArticleResult>>(results);
 
-        //    for (int i = 0; i < results.Count; i++)
-        //    {
-        //        ws.Cell(i + 2, 1).Value = results[i].ENumber;
-        //        ws.Cell(i + 2, 2).Value = results[i].EpdLink;
-        //    }
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("EPD Links");
+            ws.Cell(1, 1).Value = "E-nummer";
+            ws.Cell(1, 2).Value = "EPD-länk";
+            ws.Range(1, 1, 1, 2).Style.Font.Bold = true;
 
-        //    using var stream = new MemoryStream();
-        //    workbook.SaveAs(stream);
-        //    stream.Position = 0;
-        //    return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "epd_links.xlsx");
-        //}
+            for (int i = 0; i < list.Count; i++)
+            {
+                ws.Cell(i + 2, 1).Value = list[i].ENumber;
+                var cell = ws.Cell(i + 2, 2);
+                cell.Value = list[i].EpdLink;
+                if (!string.IsNullOrWhiteSpace(list[i].EpdLink) && list[i].EpdLink.StartsWith("http"))
+                {
+                    cell.SetHyperlink(new XLHyperlink(list[i].EpdLink));
+                    cell.Style.Font.FontColor = XLColor.Blue;
+                    cell.Style.Font.Underline = XLFontUnderlineValues.Single;
+                }
+                else
+                {
+                    cell.Value = list[i].EpdLink ?? "Ej hittad";
+                }
+            }
+            ws.Columns().AdjustToContents();
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "epd_links.xlsx");
+        }
+
         public IActionResult Privacy()
         {
             return View();

@@ -37,14 +37,16 @@
     </div>
 
 </form>
-
-<div class="mt-5">
-    <hr />
-    <form id="downloadForm" method="post" action="/Home/DownloadExcel">
+<div id="downloadForm" style="display:none;">
+    <br />
+    <form id="downloadExcelForm" method="post" action="/Home/DownloadExcel">
         <input type="hidden" name="results" id="resultsInput" />
         <button type="submit">Spara som Excel-fil</button>
     </form>
+</div>
 
+<div class="mt-5">
+    <hr />
     <table class="table mt-3">
         <thead>
             <tr>
