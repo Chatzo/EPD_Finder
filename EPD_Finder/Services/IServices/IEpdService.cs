@@ -5,8 +5,7 @@ namespace EPD_Finder.Services.IServices
     public interface IEpdService
     {
         List<string> ParseInput(string eNumbers, IFormFile file);
-        Task<ArticleResult> GetEpdLinkByEnumberAsync(string enumber);
-        //Task<List<ArticleResult>> GetEpdLinksAsync(List<string> eNumbers);
-        //Task<ArticleResult> ScrapeEnumber(string eNumber);
+        Task<string> TryGetEpdLink(string eNumber);
+
     }
 }

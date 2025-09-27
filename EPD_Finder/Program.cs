@@ -11,7 +11,11 @@ namespace EPD_Finder
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-            builder.Services.AddHttpClient<IEpdService, EpdService>();
+            builder.Services.AddHttpClient<IEpdService, EpdService>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                AllowAutoRedirect = true
+            });
 
             var app = builder.Build();
 

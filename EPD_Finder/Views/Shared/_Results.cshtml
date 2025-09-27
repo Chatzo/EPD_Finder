@@ -20,7 +20,20 @@
         {
             <tr>
                 <td>@result.ENumber</td>
-                <td>@result.EpdLink</td>
+                <td style="position: relative;">
+                    @if (!string.IsNullOrWhiteSpace(result.EpdLink) && result.EpdLink != "Ej hittad")
+                    {
+                        <a href="@result.EpdLink" target="_blank" class="epdLink">@result.EpdLink</a>
+                        <button class="copyBtn" style="border:none; background:none; cursor:pointer;">
+                            <img src="~/images/copy.svg"/>
+                            <span class="copyCheck text-end">Kopierat ✔</span>
+                        </button>  
+                    }
+                    else
+                    {
+                        <span style="color: red">@result.EpdLink</span>
+                    }
+                </td>
             </tr>
         }
     </tbody>
