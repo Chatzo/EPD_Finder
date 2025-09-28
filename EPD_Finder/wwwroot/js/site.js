@@ -9,17 +9,39 @@ var totalLinks = 0;
 var foundLinks = 0;
 var failedLinks = 0;
 
+
 // Switch input type
 function initInputSwitch() {
     $("input[name='inputType']").change(function () {
         if ($(this).val() === "file") {
-            $("#fileInputDiv").show();
+            // Hide textarea and reset
             $("#textInputDiv").hide();
-            $("#textInputDiv textarea").val("");
+            $("#enumbersText")
+                .prop("required", false)
+                .val("")
+                .get(0).setCustomValidity("");
+
+            // Show file input and set required
+            $("#fileInputDiv").show();
+            $("#fileInput")
+                .prop("required", true)
+                .get(0).setCustomValidity("");
+
+            showCheckmark();
         } else {
+            // Hide file input and reset
             $("#fileInputDiv").hide();
-            $("#fileInputDiv input[type='file']").val("");
+            $("#fileInput")
+                .prop("required", false)
+                .val("")
+                .get(0).setCustomValidity("");
+            $("#fileUploadedCheck").remove();
+
+            // Show textarea and set required
             $("#textInputDiv").show();
+            $("#enumbersText")
+                .prop("required", true)
+                .get(0).setCustomValidity("");
         }
     });
 }
@@ -31,7 +53,7 @@ function initFormSubmit() {
         $("#results").empty();
         $("#resultsInput").val("[]");
         $("#linksCounter").html("");
-
+        $("#downloadForm").hide();
         var formData = new FormData(this);
         $.ajax({
             url: "/Home/CreateJob",
@@ -88,13 +110,13 @@ function startSSE(jobId) {
             );
             cell.append(
                 $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
-                    .append($("<img>").attr("src", "/images/copy.svg"))
-                    .append($("<span>").addClass("copyCheck text-end").text("Kopierat ✔"))
+                    .append($("<img>").attr("src", "/images/copy-white.svg").addClass("ms-2"))
+                    .append($("<span>").addClass("copyCheck text-success text-end ms-2").text("Kopierat ✔"))
             );
             row.find("td:last").replaceWith(cell);
         } else {
             failedLinks++;
-            row.find("td:last").text(result.EpdLink).css("color", "red");
+            row.find("td:last").text(result.EpdLink).addClass("text-danger");
         }
 
         updateLoadingbar()
@@ -119,15 +141,21 @@ function startSSE(jobId) {
 }
 
 function updateLoadingbar() {
-
     var percent = Math.round(((foundLinks + failedLinks) / totalLinks) * 100);
     $("#progressBar").css("width", percent + "%");
     $("#progressBarText").text(`${percent} %`);
     $("#progressText").html(`
-        <span style="margin-right: 15px;">Hämtade ${foundLinks + failedLinks} av ${totalLinks} länkar</span>
-        <span style="color:green; margin-right: 15px;">Hittade: ${foundLinks}</span>
-        <span style="color:red; margin-right: 15px;">Misslyckade: ${failedLinks}</span>
+        <span class="me-3">Hämtade ${foundLinks + failedLinks} av ${totalLinks} länkar</span>
+        <span class="text-success me-3">Hittade: ${foundLinks}</span>
+        <span class="text-danger me-3">Misslyckade: ${failedLinks}</span>
     `);
+
+    if (percent >= 0 && percent <= 11) {
+        document.getElementById("loadingContainer").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 }
 $("#downloadExcelForm").submit(function (e) {
     e.preventDefault();
@@ -160,7 +188,28 @@ function collectResultsFromTable() {
     return JSON.stringify(arr);
 }
 
+$("input[name='inputType']").change(function () {
+    // Scroll the container div into view
+    document.querySelector(".mx-auto.w-50").scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+});
 
+function showCheckmark() {
+    // Show green checkmark when a file is selected
+    $("#fileInput").on("change", function () {
+        let checkId = "#fileUploadedCheck";
+        if (!$(checkId).length) {
+            $(this).after('<span id="fileUploadedCheck" font-size:1.5rem; margin-left:10px;">✔</span>');
+        }
+        if (this.files.length > 0) {
+            $(checkId).show();
+        } else {
+            $(checkId).hide();
+        }
+    });
+}
 
 // Copy buttons
 function initCopyButtons() {
