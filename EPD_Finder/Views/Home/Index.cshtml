@@ -16,14 +16,14 @@
 	<div class="mx-auto w-50 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
 		<label class="d-block text-center text-info mb-0 fw-bold fs-3">Välj sökmetod:</label>
 		<div class="d-block text-center m-0">
-			<label>
-				<input type="radio" name="inputType" value="text" />
-				Mata in manuellt
-			</label>
-			<label class="ms-2">
-				<input type="radio" name="inputType" value="file" />
-				Ladda upp Excelfil
-			</label>
+			<div class="form-check form-check-inline">
+				<input class="form-check-input" type="radio" name="inputType" id="inputText" value="text">
+				<label class="form-check-label" for="inputText">Mata in manuellt</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input class="form-check-input" type="radio" name="inputType" id="inputFile" value="file">
+				<label class="form-check-label" for="inputFile">Ladda upp Excelfil</label>
+			</div>
 		</div>
 	</div>
 
