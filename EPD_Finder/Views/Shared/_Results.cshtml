@@ -1,0 +1,41 @@
+﻿@* @model List<EPD_Finder.Models.ArticleResult>
+
+<form asp-action="DownloadExcel" method="post">
+    @foreach (var result in Model)
+    {
+        <input type="hidden" name="results" value="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(result))" />
+    }
+    <button type="submit">Spara som Excel-fil</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ArtNr</th>
+            <th>EPD-länkar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var result in Model)
+        {
+            <tr>
+                <td>@result.ENumber</td>
+                <td style="position: relative;">
+                    @if (!string.IsNullOrWhiteSpace(result.EpdLink) && result.EpdLink != "Ej hittad")
+                    {
+                        <a href="@result.EpdLink" target="_blank" class="epdLink">@result.EpdLink</a>
+                        <button class="copyBtn" style="border:none; background:none; cursor:pointer;">
+                            <img src="~/images/copy.svg"/>
+                            <span class="copyCheck text-end">Kopierat ✔</span>
+                        </button>  
+                    }
+                    else
+                    {
+                        <span style="color: red">@result.EpdLink</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+ *@
