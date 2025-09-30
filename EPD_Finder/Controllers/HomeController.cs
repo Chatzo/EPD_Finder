@@ -52,12 +52,12 @@ namespace EPD_Finder.Controllers
             {
                 try
                 {
-                    var epdLink = await _epdService.TryGetEpdLink(num);
-                    return new ArticleResult { ENumber = num, EpdLink = epdLink };
+                    ArticleResult result = await _epdService.TryGetEpdLink(num);
+                    return result;
                 }
                 catch
                 {
-                    return new ArticleResult { ENumber = num, EpdLink = "Ej hittad" };
+                    return new ArticleResult { ENumber = num, Source="", EpdLink = "Ej hittad" };
                 }
             }).ToList();
 
@@ -87,13 +87,15 @@ namespace EPD_Finder.Controllers
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("EPD Links");
             ws.Cell(1, 1).Value = "E-nummer";
-            ws.Cell(1, 2).Value = "EPD-länk";
-            ws.Range(1, 1, 1, 2).Style.Font.Bold = true;
+            ws.Cell(1, 2).Value = "Källa";
+            ws.Cell(1, 3).Value = "EPD-länk";
+            ws.Range(1, 1, 1, 3).Style.Font.Bold = true;
 
             for (int i = 0; i < list.Count; i++)
             {
                 ws.Cell(i + 2, 1).Value = list[i].ENumber;
-                var cell = ws.Cell(i + 2, 2);
+                ws.Cell(i + 2, 2).Value = list[i].Source;
+                var cell = ws.Cell(i + 2, 3);
                 cell.Value = list[i].EpdLink;
                 if (!string.IsNullOrWhiteSpace(list[i].EpdLink) && list[i].EpdLink.StartsWith("http"))
                 {
@@ -107,6 +109,10 @@ namespace EPD_Finder.Controllers
                 }
             }
             ws.Columns().AdjustToContents();
+            foreach (var col in ws.Columns())
+            {
+                if (col.Width < 15) col.Width = 15;
+            }
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             stream.Position = 0;

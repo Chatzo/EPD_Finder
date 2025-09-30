@@ -84,8 +84,9 @@ function preCreateRows(eNumbers, jobId) {
 
     eNumbers.forEach(num => {
         var row = $("<tr>").attr("data-enumber", num);
-        row.append($("<td>").text(num));
-        row.append($("<td>").text("Hämtar..."));
+        row.append($("<td>").css("position", "relative").text(num));
+        row.append($("<td>").css("position", "relative").text(""));
+        row.append($("<td>").css("position", "relative").text("Hämtar..."));
         $("#results").append(row);
     });
 
@@ -100,20 +101,31 @@ function startSSE(jobId) {
     evtSource.onmessage = function (e) {
         var result = JSON.parse(e.data);
         var row = $("#results").find(`tr[data-enumber='${result.ENumber}']`);
-        row.find("td:last").empty();
+
+        // Clear Source + EPD columns
+        row.find("td").slice(1).empty();
 
         if (result.EpdLink && result.EpdLink.startsWith("http")) {
             foundLinks++;
-            var cell = $("<td>").css("position", "relative");
-            cell.append(
+
+            var sourceTd = row.find("td").eq(1);
+            if (result.Source === "Ahlsell") {
+                sourceTd.text(result.Source || "").removeClass("text-warning").addClass("text-info");
+            } else if (result.Source) {
+                sourceTd.text(result.Source).removeClass("text-info").addClass("text-warning");
+            } else {
+                sourceTd.text("").removeClass("text-info text-warning");
+            }
+
+            var epdTd = row.find("td").eq(2);
+            epdTd.append(
                 $("<a>").addClass("epdLink fs-6 text-wrap").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
             );
-            cell.append(
+            epdTd.append(
                 $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
                     .append($("<img>").attr("src", "/images/copy-white.svg").addClass("ms-2"))
                     .append($("<span>").addClass("copyCheck text-success text-end ms-2").text("Kopierat ✔"))
             );
-            row.find("td:last").replaceWith(cell);
         } else {
             failedLinks++;
             row.find("td:last").text(result.EpdLink).addClass("text-danger");
@@ -181,8 +193,9 @@ function collectResultsFromTable() {
     var arr = [];
     $("#results tr").each(function () {
         var en = $(this).find("td:first").text().trim();
-        var link = $(this).find("td:last a").attr("href") || $(this).find("td:last").text().trim();
-        arr.push({ ENumber: en, EpdLink: link });
+        var source = $(this).find("td").eq(1).text().trim();
+        var link = $(this).find("td").eq(2).find("a").attr("href") || $(this).find("td:last").text().trim();
+        arr.push({ ENumber: en, Source: source, EpdLink: link });
     });
     return JSON.stringify(arr);
 }

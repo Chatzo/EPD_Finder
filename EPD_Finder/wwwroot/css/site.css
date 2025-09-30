@@ -63,3 +63,14 @@ body {
     word-break: break-word;
     white-space: normal;
 }
+/* Default for small screens */
+.artnr { width: 25%; }
+.source { width: 25%; }
+.epd { width: 50%; }
+
+/* For large screens */
+@media (min-width: 992px) { 
+    .artnr { width: 15%; }
+    .source { width: 15%; }
+    .epd { width: 70%; }
+}
