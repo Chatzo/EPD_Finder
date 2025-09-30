@@ -1,7 +1,7 @@
 ﻿@{
 	ViewData["Title"] = "EPD Finder";
 }
-<div class="border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
+<div class="mx-auto col-12 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 	<ul>
 		<li>
 			Denna sida hjälper dig att hitta länkar till Pdf-filer för EPD information (miljödeklarationer)
@@ -9,27 +9,28 @@
 		</li>
 		<li>Man kan söka manuellt eller med excelfil</li>
 		<li>Resultatet är länkar som kan kopieras en och en alternativt kan en excelfil laddas ner.</li>
-		<li><span class="text-danger fw-bold">OBSERERA!</span>...ibland hittas inte alla nummer så kontrollera resultatet.</li>
+		<li><span class="text-warning fw-bold">OBSERERA!</span>...ibland hittas inte alla nummer så kontrollera resultatet.</li>
+		<li><span class="text-danger fw-bold">DISCLAIMER!</span>: Vi (skaparna av denna sida) tar inget ansvar för felaktig information hittad via vår tjänst då vi endast söker efter filerna på internet.</li>
 	</ul>
 </div>
-<form id="epdForm" enctype="multipart/form-data" class="mb-3">
-	<div class="mx-auto w-50 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
+<form id="epdForm" enctype="multipart/form-data" class="mx-auto m-3 justify-content-center">
+	<div class="mx-auto col-12 col-lg-6 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 		<label class="d-block text-center text-info mb-0 fw-bold fs-3">Välj sökmetod:</label>
-		<div class="d-block text-center m-0">
-			<label>
-				<input type="radio" name="inputType" value="text" />
-				Mata in manuellt
-			</label>
-			<label class="ms-2">
-				<input type="radio" name="inputType" value="file" />
-				Ladda upp Excelfil
-			</label>
+		<div class="d-block text-center row justify-content-center m-0">
+			<div class="col-5 form-check form-check-inline">
+				<input class="form-check-input" type="radio" name="inputType" id="inputText" value="text">
+				<label class="form-check-label" for="inputText">Mata in manuellt</label>
+			</div>
+			<div class="col-5 form-check form-check-inline">
+				<input class="form-check-input" type="radio" name="inputType" id="inputFile" value="file">
+				<label class="form-check-label" for="inputFile">Ladda upp Excelfil</label>
+			</div>
 		</div>
 	</div>
 
-	<div id="inputdiv" class="mx-auto d-flex flex-column align-items-center">
+	<div id="inputdiv" class="mx-auto col-12 col-lg-10  align-items-center">
 		<!-- Div för manuellt inmatning -->
-		<div id="textInputDiv" style="display:none;" class="text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
+		<div id="textInputDiv" style="display:none;" class="text-center mx-auto col-12 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 			<label class="text-info mb-1 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label>
 			<textarea id="enumbersText" name="eNumbers" rows="5" style="width:100%;" class="rounded-2" placeholder="0017720
 0000820
@@ -42,13 +43,12 @@
 		</div>
 
 		<!-- Div för filuppladdning -->
-		<div id="fileInputDiv" style="display:none;" class="w-75 text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
+		<div id="fileInputDiv" style="display:none;" class="mx-auto col-12 col-lg-7 text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 			<label class="text-info mb-1 fw-bold fs-3">Ladda upp en fil (Excel/CSV):</label><br />
-
-			<input type="file" name="file" accept=".csv,.xlsx" id="fileInput"
-				   oninvalid="this.setCustomValidity('Vänligen välj en fil eller byt inmatningsmetod')"
-				   oninput="this.setCustomValidity('')" />
-			<span id="fileCheck" class="fs-5 ms-2" style="display:none;">✔</span>
+			<input type="file" class="flex-shrink-1 text-truncate small" name="file" accept=".csv,.xlsx" id="fileInput"
+					   oninvalid="this.setCustomValidity('Vänligen välj en fil eller byt inmatningsmetod')"
+					   oninput="this.setCustomValidity('')" />
+				<span id="fileCheck" class="fs-6" style="display:none;">✔</span>
 			<div class="mt-4 text-center">
 				<button class="btn w-15 btn-success" type="submit">Sök EPD-länkar</button>
 			</div>
@@ -57,7 +57,7 @@
 
 
 </form>
-<div id="loadingContainer" style="display:none;" class="border border-4 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
+<div id="loadingContainer" style="display:none;" class="mx-auto col-12 border border-4 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 	<div class="bg-dark m-1 p-2 rounded-5" style="position: relative;">
 		<span id="progressBarText" class="fw-bold text-light" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">></span>
 		<div id="progressBar" class="bg-success" style="width: 0%; height: 15px; border-radius: 7px;"></div>
@@ -65,21 +65,26 @@
 	<div id="progressText" class="fw-bold mt-1 text-center"></div>
 </div>
 
-<div id="downloadForm" style="display:none;">
+<div id="downloadForm" class="mx-auto col-12 col-lg-6" style="display:none;">
 	<form id="downloadExcelForm">
-		<div class="w-50 text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 mt-5 p-3">
-			<label class="text-info mb-1 me-2 fw-bold fs-3">Ladda ner resultatet:</label>
-			<button class="btn btn-warning text-center" type="submit">Spara som Excel-fil</button>
+		<div id="downloadFinishedDiv" class="text-center text-success fw-bold fs-3">Sökning slutförd ✅</div>
+		<div class="text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
+			<div class="text-info mb-1 me-2 fw-bold fs-3">Ladda ner resultatet</div>
+			<button class="btn btn-warning text-center mb-3" type="submit">Spara Excel-fil</button>
+			<div class="text-info mb-1 me-2 fw-bold fs-3">Eller</div>
+			<a asp-controller="Home" asp-action="Index" class="btn btn-lg btn-success text-center">Sök igen</a>
 		</div>
+
 	</form>
 </div>
 
-<div id="outputTable" class="mt-5 border border-3 border-secondary bg-primary rounded-5 p-3" style="display:none;">
-	<table class="table mt-3">
+<div id="outputTable" class="mx-auto col-12 mt-3 border border-3 border-secondary bg-primary rounded-5 p-3" style="display:none;">
+	<table class="table w-100 mt-3">
 		<thead>
 			<tr>
-				<th class="text-info">ArtNr</th>
-				<th class="text-info">EPD-länkar</th>
+				<th class="text-info artnr">ArtNr</th>
+				<th class="text-info source">Source:</th>
+				<th class="text-info epd">EPD-länkar</th>
 			</tr>
 		</thead>
 		<tbody id="results"></tbody>
