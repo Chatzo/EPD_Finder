@@ -1,39 +1,39 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - EPD_Finder</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/EPD_Finder.styles.css" asp-append-version="true" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>@ViewData["Title"] - EPD_Finder</title>
+	<link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+	<link rel="stylesheet" href="~/EPD_Finder.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark box-shadow mb-0" style="border:none">
-            <div class="container-fluid justify-content-center">
-                <a class="navbar-brand rounded-3" style="border:none" asp-area="" asp-controller="Home" asp-action="Index">
-                    <h1 class="mb-0 text-info">EPD Finder</h1>
-                </a>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+	<header>
+		<nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark box-shadow mb-0" style="border:none">
+			<div class="container-fluid justify-content-center">
+				<a class="navbar-brand rounded-3" style="border:none" asp-area="" asp-controller="Home" asp-action="Index">
+					<h1 class="mb-0 text-info">EPD Finder</h1>
+				</a>
+			</div>
+		</nav>
+	</header>
+	<div class="d-flex flex-column min-vh-100">
+		<main role="main" class="flex-sm-fill container">
+			@RenderBody()
+		</main>
+	</div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - EPD Finder - By Mohamed Abdul Hussein & Georgios Chatzoglakis
-            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a> |
-            <a asp-area="" asp-controller="Home" asp-action="License">License</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+	<footer class="border-top footer text-muted" style="padding:1rem; line-height:1rem; font-size:0.8rem;">
+			<div class="container text-center text-wrap fs-6">
+				&copy; 2025 - EPD Finder - By Mohamed Abdul Hussein & Georgios Chatzoglakis
+				<a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a> |
+				<a asp-area="" asp-controller="Home" asp-action="License">License</a>
+			</div>
+	</footer>
+	<script src="~/lib/jquery/dist/jquery.min.js"></script>
+	<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<script src="~/js/site.js" asp-append-version="true"></script>
+	@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
