@@ -56,3 +56,10 @@ body {
     filter: brightness(0.2); /* mörknar när knappen trycks ned */
     transform: scale(0.8);
 }
+
+#outputTable table th,
+#outputTable table td {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+}

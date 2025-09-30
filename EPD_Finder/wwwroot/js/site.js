@@ -35,7 +35,7 @@ function initInputSwitch() {
                 .prop("required", false)
                 .val("")
                 .get(0).setCustomValidity("");
-            $("#fileUploadedCheck").remove();
+            $("#fileCheck").hide();
 
             // Show textarea and set required
             $("#textInputDiv").show();
@@ -106,7 +106,7 @@ function startSSE(jobId) {
             foundLinks++;
             var cell = $("<td>").css("position", "relative");
             cell.append(
-                $("<a>").addClass("epdLink").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
+                $("<a>").addClass("epdLink fs-6 text-wrap").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
             );
             cell.append(
                 $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
@@ -130,7 +130,6 @@ function startSSE(jobId) {
 
     evtSource.addEventListener("done", function () {
         evtSource.close();
-        $("#progressText").append("( Sökning slutförd ✅ )");
         $("#downloadForm").show();
     });
 
@@ -190,7 +189,7 @@ function collectResultsFromTable() {
 
 $("input[name='inputType']").change(function () {
     // Scroll the container div into view
-    document.querySelector(".mx-auto.w-50").scrollIntoView({
+    document.querySelector(".mx-auto").scrollIntoView({
         behavior: "smooth",
         block: "center"
     });
@@ -199,14 +198,10 @@ $("input[name='inputType']").change(function () {
 function showCheckmark() {
     // Show green checkmark when a file is selected
     $("#fileInput").on("change", function () {
-        let checkId = "#fileUploadedCheck";
-        if (!$(checkId).length) {
-            $(this).after('<span id="fileUploadedCheck" font-size:1.5rem; margin-left:10px;">✔</span>');
-        }
         if (this.files.length > 0) {
-            $(checkId).show();
+            $("#fileCheck").show();
         } else {
-            $(checkId).hide();
+            $("#fileCheck").hide();
         }
     });
 }
