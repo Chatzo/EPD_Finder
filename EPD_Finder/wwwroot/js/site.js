@@ -4,11 +4,11 @@
     initCopyButtons();
 });
 
-// Global counters
+// Global variables
 var totalLinks = 0;
 var foundLinks = 0;
 var failedLinks = 0;
-
+var currentSSE = null;
 
 // Switch input type
 function initInputSwitch() {
@@ -46,15 +46,37 @@ function initInputSwitch() {
     });
 }
 
+function reset() {
+    if (currentSSE) {
+        currentSSE.close();
+        currentSSE = null;
+    }
+
+    // Reset counters
+    totalLinks = 0;
+    foundLinks = 0;
+    failedLinks = 0;
+
+    // Clear previous results
+    $("#results").empty();
+    $("#resultsInput").val("[]");
+    $("#linksCounter").html("");
+    $("#downloadForm").hide();
+    $("#progressBar").css("width", "0%");
+    $("#progressBarText").text("0 %");
+    $("#progressText").html("");
+}
 // Form submission
 function initFormSubmit() {
     $("#epdForm").submit(function (e) {
         e.preventDefault();
-        $("#results").empty();
-        $("#resultsInput").val("[]");
-        $("#linksCounter").html("");
-        $("#downloadForm").hide();
+        reset();
         var formData = new FormData(this);
+        var selectedSources = [];
+        $('input[name="sources"]:checked').each(function () {
+            selectedSources.push($(this).val());
+        });
+        selectedSources.forEach(src => formData.append('sources', src));
         $.ajax({
             url: "/Home/CreateJob",
             type: "POST",
@@ -87,6 +109,7 @@ function preCreateRows(eNumbers, jobId) {
         row.append($("<td>").css("position", "relative").text(num));
         row.append($("<td>").css("position", "relative").text(""));
         row.append($("<td>").css("position", "relative").text("Hämtar..."));
+        row.append($("<td>").css("position", "relative"));   
         $("#results").append(row);
     });
 
@@ -96,9 +119,8 @@ function preCreateRows(eNumbers, jobId) {
 // SSE
 function startSSE(jobId) {
     var url = "/Home/GetResultsStream?jobId=" + jobId;
-    var evtSource = new EventSource(url);
-
-    evtSource.onmessage = function (e) {
+    currentSSE = new EventSource(url);
+    currentSSE.onmessage = function (e) {
         var result = JSON.parse(e.data);
         var row = $("#results").find(`tr[data-enumber='${result.ENumber}']`);
 
@@ -121,14 +143,15 @@ function startSSE(jobId) {
             epdTd.append(
                 $("<a>").addClass("epdLink fs-6 text-wrap").attr("href", result.EpdLink).attr("target", "_blank").text(result.EpdLink)
             );
-            epdTd.append(
+            var copyTd = row.find("td").eq(3);
+            copyTd.empty().append(
                 $("<button>").addClass("copyBtn").css({ border: "none", background: "none", cursor: "pointer" })
                     .append($("<img>").attr("src", "/images/copy-white.svg").addClass("ms-2"))
-                    .append($("<span>").addClass("copyCheck text-success text-end ms-2").text("Kopierat ✔"))
             );
         } else {
             failedLinks++;
-            row.find("td:last").text(result.EpdLink).addClass("text-danger");
+            row.find("td").eq(2).text(result.EpdLink || "Ej hittad").addClass("text-danger");
+            row.find("td").eq(3).empty();
         }
 
         updateLoadingbar()
@@ -140,14 +163,16 @@ function startSSE(jobId) {
         $("#resultsInput").val(JSON.stringify(arr));
     };
 
-    evtSource.addEventListener("done", function () {
-        evtSource.close();
+    currentSSE.addEventListener("done", function () {
+        currentSSE.close();
+        currentSSE = null;
         $("#downloadForm").show();
     });
 
-    evtSource.onerror = function () {
+    currentSSE.onerror = function () {
         $("#results").append("<tr><td colspan='2'>Fel vid hämtning</td></tr>");
-        evtSource.close();
+        currentSSE.close();
+        currentSSE = null;
     };
 }
 
@@ -223,13 +248,25 @@ function showCheckmark() {
 function initCopyButtons() {
     $("#results").on("click", ".copyBtn", function () {
         var btn = $(this);
-        var link = btn.closest("td").find("a.epdLink").attr("href");
-        var check = btn.closest("td").find(".copyCheck");
+        var row = btn.closest("tr");
+        var link = row.find("a.epdLink").attr("href");
+        if (!link) return;
 
         navigator.clipboard.writeText(link).then(function () {
-            check.removeClass("show");
-            void check[0].offsetWidth;
-            check.addClass("show");
+            let floatMsg = $("<span>")
+                .addClass("copyCheckFloating show")
+                .text("Kopierat ✔")
+                .appendTo("body");
+
+            // positionera mitt över knappen
+            let rect = btn[0].getBoundingClientRect();
+            floatMsg.css({
+                left: rect.left + window.scrollX + rect.width / 2 + 20 + "px",
+                top: rect.top + window.scrollY + "px",
+                transform: "translateX(-50%)" 
+            });
+
+            setTimeout(() => floatMsg.remove(), 1200);
         }).catch(function (err) {
             console.error("Kunde inte kopiera: ", err);
         });
