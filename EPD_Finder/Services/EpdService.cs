@@ -10,6 +10,7 @@ namespace EPD_Finder.Services
         private readonly AhlsellSearch _ahlsell;
         private readonly EnummersokSearch _enummersok;
         private readonly OnninenSearch _onninen;
+        private readonly SolarSearch _solar;
 
         public EpdService(HttpClient client, ILogger<EpdService> logger)
         {
@@ -19,6 +20,7 @@ namespace EPD_Finder.Services
             _ahlsell = new AhlsellSearch(_client, _logger);
             _enummersok = new EnummersokSearch(_client, _logger);
             _onninen = new OnninenSearch(_client, _logger);
+            _solar = new SolarSearch(_client, _logger);
         }
         public List<string> ParseInput(string eNumbers, IFormFile file)
         {
@@ -64,26 +66,35 @@ namespace EPD_Finder.Services
             return list.Distinct().ToList();
         }
 
-        public async Task<ArticleResult> TryGetEpdLink(string eNumber)
+        public async Task<ArticleResult> TryGetEpdLink(string eNumber, List<string> selectedSources)
         {
-            //from Ahlsell
-            string pdfUrl = await _ahlsell.TryGetEpdLink(eNumber);
-            if (await IsLinkValid(pdfUrl))
+            if (selectedSources.Contains("E-nummersök"))
             {
-                return new ArticleResult { ENumber = eNumber, Source = "Ahlsell", EpdLink = pdfUrl };
+                var pdfUrl = await _enummersok.TryGetEpdLink(eNumber);
+                if (await IsLinkValid(pdfUrl))
+                    return new ArticleResult { ENumber = eNumber, Source = "E-nummersök", EpdLink = pdfUrl };
             }
-            //from Onninen
-            pdfUrl = await _onninen.TryGetEpdLink(eNumber);
-            if (await IsLinkValid(pdfUrl))
+            if (selectedSources.Contains("Ahlsell"))
             {
-                return new ArticleResult { ENumber = eNumber, Source = "Onninen", EpdLink = pdfUrl };
+                var pdfUrl = await _ahlsell.TryGetEpdLink(eNumber);
+                if (await IsLinkValid(pdfUrl))
+                    return new ArticleResult { ENumber = eNumber, Source = "Ahlsell", EpdLink = pdfUrl };
             }
-            //from e-nummersok
-            pdfUrl = await _enummersok.TryGetEpdLink(eNumber);
-            if (await IsLinkValid(pdfUrl))
+
+            if (selectedSources.Contains("Solar"))
             {
-                return new ArticleResult { ENumber = eNumber, Source = "E-nummersök", EpdLink = pdfUrl };
+                var pdfUrl = await _solar.TryGetEpdLink(eNumber);
+                if (await IsLinkValid(pdfUrl))
+                    return new ArticleResult { ENumber = eNumber, Source = "Solar", EpdLink = pdfUrl };
             }
+
+            if (selectedSources.Contains("Onninen"))
+            {
+                var pdfUrl = await _onninen.TryGetEpdLink(eNumber);
+                if (await IsLinkValid(pdfUrl))
+                    return new ArticleResult { ENumber = eNumber, Source = "Onninen", EpdLink = pdfUrl };
+            }
+
             throw new ArgumentException("Ej hittad");
         }
 
@@ -106,8 +117,5 @@ namespace EPD_Finder.Services
                 return false;
             }
         }
-
-        
-        
     }
 }

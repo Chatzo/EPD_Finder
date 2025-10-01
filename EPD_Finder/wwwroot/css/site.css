@@ -21,15 +21,17 @@ body {
   margin-bottom: 60px;
 }
 
-.copyCheck {
-    display: inline-block;
-    color: var(--bs-success) !important; 
-    top: 0;
+.copyCheckFloating {
+    position: absolute;
+    z-index: 9999;
+    pointer-events: none;
+    color: var(--bs-success); 
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
     opacity: 0;
-    font-size: 18px;
 }
-
-    .copyCheck.show {
+    .copyCheckFloating.show {
         animation: fadeUp 1s forwards;
     }
 
@@ -66,11 +68,14 @@ body {
 /* Default for small screens */
 .artnr { width: 25%; }
 .source { width: 25%; }
-.epd { width: 50%; }
+.epd { width: 40%; }
+.copy {width: 10%; }
+
 
 /* For large screens */
 @media (min-width: 992px) { 
     .artnr { width: 15%; }
     .source { width: 15%; }
-    .epd { width: 70%; }
+    .epd { width: 60%; }
+    .copy {width: 10%; }
 }
