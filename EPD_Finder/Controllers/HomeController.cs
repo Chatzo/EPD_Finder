@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
+using EPD_Finder.Utility;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -11,7 +12,8 @@ namespace EPD_Finder.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IEpdService _epdService;
-        private static ConcurrentDictionary<string, List<string>> _jobs = new();
+        private static ConcurrentDictionary<string, JobData> _jobs = new();
+        private static readonly SemaphoreSlim _limit = new SemaphoreSlim(10);
         public HomeController(ILogger<HomeController> logger, IEpdService epdService)
         {
             _logger = logger;
@@ -24,13 +26,17 @@ namespace EPD_Finder.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateJob(IFormFile file, string eNumbers)
+        public IActionResult CreateJob(IFormFile file, string eNumbers, [FromForm] List<string> sources)
         {
             var list = _epdService.ParseInput(eNumbers, file);
             if (!list.Any()) return BadRequest("Inga E-nummer hittades.");
 
             var jobId = Guid.NewGuid().ToString();
-            _jobs[jobId] = list;
+            _jobs[jobId] = new JobData
+            {
+                ENumbers = list,
+                Sources = sources ?? new List<string>()
+            };
 
             return Ok(new { jobId, eNumbers = list });
         }
@@ -38,7 +44,7 @@ namespace EPD_Finder.Controllers
         [HttpGet]
         public async Task GetResultsStream(string jobId)
         {
-            if (string.IsNullOrWhiteSpace(jobId) || !_jobs.TryGetValue(jobId, out var list))
+            if (string.IsNullOrWhiteSpace(jobId) || !_jobs.TryGetValue(jobId, out var jobData))
             {
                 Response.StatusCode = 400; // Bad Request
                 await Response.WriteAsync("Invalid or missing jobId");
@@ -48,16 +54,21 @@ namespace EPD_Finder.Controllers
             Response.ContentType = "text/event-stream";
             Response.Headers.Add("Cache-Control", "no-cache");
 
-            var tasks = list.Select(async num =>
+            var tasks = jobData.ENumbers.Select(async num =>
             {
+                await _limit.WaitAsync();
                 try
                 {
-                    ArticleResult result = await _epdService.TryGetEpdLink(num);
+                    ArticleResult result = await _epdService.TryGetEpdLink(num, jobData.Sources);
                     return result;
                 }
                 catch
                 {
                     return new ArticleResult { ENumber = num, Source="", EpdLink = "Ej hittad" };
+                }
+                finally
+                {
+                    _limit.Release();
                 }
             }).ToList();
 

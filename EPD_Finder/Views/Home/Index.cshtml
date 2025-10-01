@@ -13,44 +13,64 @@
 		<li><span class="text-danger fw-bold">DISCLAIMER!</span>: Vi (skaparna av denna sida) tar inget ansvar för felaktig information hittad via vår tjänst då vi endast söker efter filerna på internet.</li>
 	</ul>
 </div>
+<div class="mx-auto col-12 col-lg-6 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
+	<label class="d-block text-center text-light mb-0 fs-3">Välj källor:</label>
+	<div class="d-flex flex-wrap justify-content-center gap-3 mt-2">
+		<div class="form-check" style="display: flex; align-items: center; gap: 0.4rem;">
+			<input class="form-check-input border-2 border-light" type="checkbox" name="sources" id="sourceEnummersok" value="E-nummersök" checked>
+			<label class="form-check-label" for="sourceEnummersok">E-nummersök</label>
+		</div>
+		<div class="form-check" style="display: flex; align-items: center; gap: 0.4rem;">
+			<input class="form-check-input border-2 border-light" type="checkbox" name="sources" id="sourceAhlsell" value="Ahlsell" checked>
+			<label class="form-check-label" for="sourceAhlsell">Ahlsell</label>
+		</div>
+		<div class="form-check" style="display: flex; align-items: center; gap: 0.4rem;">
+			<input class="form-check-input border-2 border-light" type="checkbox" name="sources" id="sourceSolar" value="Solar" checked>
+			<label class="form-check-label" for="sourceSolar">Solar</label>
+		</div>
+		<div class="form-check" style="display: flex; align-items: center; gap: 0.4rem;">
+			<input class="form-check-input border-2 border-light" type="checkbox" name="sources" id="sourceOnninen" value="Onninen" checked>
+			<label class="form-check-label" for="sourceOnninen">Onninen</label>
+		</div>
+	</div>
+</div>
+
 <form id="epdForm" enctype="multipart/form-data" class="mx-auto m-3 justify-content-center">
 	<div class="mx-auto col-12 col-lg-6 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
-		<label class="d-block text-center text-info mb-0 fw-bold fs-3">Välj sökmetod:</label>
+		<label class="d-block text-center text-light mb-0 fs-3">Välj sökmetod:</label>
 		<div class="d-block text-center row justify-content-center m-0">
 			<div class="col-5 form-check form-check-inline">
-				<input class="form-check-input" type="radio" name="inputType" id="inputText" value="text">
+				<input class="form-check-input border-2 border-light" type="radio" name="inputType" id="inputText" value="text">
 				<label class="form-check-label" for="inputText">Mata in manuellt</label>
 			</div>
 			<div class="col-5 form-check form-check-inline">
-				<input class="form-check-input" type="radio" name="inputType" id="inputFile" value="file">
+				<input class="form-check-input border-2 border-light" type="radio" name="inputType" id="inputFile" value="file">
 				<label class="form-check-label" for="inputFile">Ladda upp Excelfil</label>
 			</div>
 		</div>
 	</div>
-
 	<div id="inputdiv" class="mx-auto col-12 col-lg-10  align-items-center">
 		<!-- Div för manuellt inmatning -->
-		<div id="textInputDiv" style="display:none;" class="text-center mx-auto col-12 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
-			<label class="text-info mb-1 fw-bold fs-3">Mata in E-nummer (radbrytning, komma eller semikolon):</label>
-			<textarea id="enumbersText" name="eNumbers" rows="5" style="width:100%;" class="rounded-2" placeholder="0017720
+		<div id="textInputDiv" style="display:none;" class="text-center mx-auto col-12 col-lg-7 border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
+			<label class="text-light mb-1 fs-3">Mata in E-nummer (radbrytning eller komma):</label>
+			<textarea id="enumbersText" name="eNumbers" rows="4" style="width:100%;" class="rounded-2" placeholder="0017720
 0000820
 0055270"
 					  oninvalid="this.setCustomValidity('Vänligen mata in minst ett E-nummer')"
 					  oninput="this.setCustomValidity('')"></textarea>
 			<div class="mt-4 text-center">
-				<button class="btn w-15 btn-success" type="submit">Sök EPD-länkar</button>
+				<button class="btn w-15 btn-light" type="submit"><i class="fa-solid fa-magnifying-glass me-2"></i>Sök EPD-länkar</button>
 			</div>
 		</div>
-
 		<!-- Div för filuppladdning -->
 		<div id="fileInputDiv" style="display:none;" class="mx-auto col-12 col-lg-7 text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
-			<label class="text-info mb-1 fw-bold fs-3">Ladda upp en fil (Excel/CSV):</label><br />
+			<label class="text-light mb-1 fs-3">Ladda upp en fil (Excel/CSV):</label><br />
 			<input type="file" class="flex-shrink-1 text-truncate small" name="file" accept=".csv,.xlsx" id="fileInput"
 					   oninvalid="this.setCustomValidity('Vänligen välj en fil eller byt inmatningsmetod')"
 					   oninput="this.setCustomValidity('')" />
 				<span id="fileCheck" class="fs-6" style="display:none;">✔</span>
 			<div class="mt-4 text-center">
-				<button class="btn w-15 btn-success" type="submit">Sök EPD-länkar</button>
+				<button class="btn w-15 btn-light" type="submit"><i class="fa-solid fa-magnifying-glass me-2"></i>Sök EPD-länkar</button>
 			</div>
 		</div>
 	</div>
@@ -59,20 +79,20 @@
 </form>
 <div id="loadingContainer" style="display:none;" class="mx-auto col-12 border border-4 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
 	<div class="bg-dark m-1 p-2 rounded-5" style="position: relative;">
-		<span id="progressBarText" class="fw-bold text-light" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">></span>
-		<div id="progressBar" class="bg-success" style="width: 0%; height: 15px; border-radius: 7px;"></div>
+		<span id="progressBarText" class="text-light" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">></span>
+		<div id="progressBar" class="bg-success" style="width: 0%; max-width:100%; height: 15px; border-radius: 7px;"></div>
 	</div>
-	<div id="progressText" class="fw-bold mt-1 text-center"></div>
+	<div id="progressText" class="mt-1 text-center"></div>
 </div>
 
 <div id="downloadForm" class="mx-auto col-12 col-lg-6" style="display:none;">
 	<form id="downloadExcelForm">
-		<div id="downloadFinishedDiv" class="text-center text-success fw-bold fs-3">Sökning slutförd ✅</div>
+		<div id="downloadFinishedDiv" class="text-center text-light fs-3">Sökning slutförd ✅</div>
 		<div class="text-center mx-auto border border-3 bg-primary rounded-5 border-secondary fs-5 m-3 p-3">
-			<div class="text-info mb-1 me-2 fw-bold fs-3">Ladda ner resultatet</div>
-			<button class="btn btn-warning text-center mb-3" type="submit">Spara Excel-fil</button>
-			<div class="text-info mb-1 me-2 fw-bold fs-3">Eller</div>
-			<a asp-controller="Home" asp-action="Index" class="btn btn-lg btn-success text-center">Sök igen</a>
+			<div class="text-light mb-1 me-2 fs-3">Ladda ner resultatet</div>
+			<button class="btn btn-warning text-center mb-3" type="submit"><i class="fa-solid fa-download me-2"></i>Spara Excel-fil</button>
+			<div class="text-light mb-1 me-2 fs-3">Eller</div>
+			<a asp-controller="Home" asp-action="Index" class="btn btn-lg btn-light text-center"><i class="fa-solid fa-magnifying-glass me-2"></i></i>Sök igen</a>
 		</div>
 
 	</form>
@@ -81,10 +101,11 @@
 <div id="outputTable" class="mx-auto col-12 mt-3 border border-3 border-secondary bg-primary rounded-5 p-3" style="display:none;">
 	<table class="table w-100 mt-3">
 		<thead>
-			<tr>
-				<th class="text-info artnr">ArtNr</th>
-				<th class="text-info source">Source:</th>
-				<th class="text-info epd">EPD-länkar</th>
+			<tr class="bg-secondary">
+				<th class="text-light artnr">ArtNr</th>
+				<th class="text-light source">Source:</th>
+				<th class="text-light epd">EPD-länkar</th>
+				<th class="text-light copy">Kopiera</th>
 			</tr>
 		</thead>
 		<tbody id="results"></tbody>
