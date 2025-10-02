@@ -18,7 +18,7 @@ namespace EPD_Finder.Services
         {
             _client = client;
              _logger = logger;
-            _client.Timeout = TimeSpan.FromSeconds(2);
+            _client.Timeout = TimeSpan.FromSeconds(10);
             _client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
