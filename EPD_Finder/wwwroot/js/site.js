@@ -1,7 +1,10 @@
 ﻿$(function () {
-    initInputSwitch();
     initFormSubmit();
     initCopyButtons();
+    initFileInput();
+    initClearButtons();
+    initInputSwitch();
+    initTextInput();
 });
 
 // Global variables
@@ -10,39 +13,15 @@ var foundLinks = 0;
 var failedLinks = 0;
 var currentSSE = null;
 
-// Switch input type
-function initInputSwitch() {
-    $("input[name='inputType']").change(function () {
-        if ($(this).val() === "file") {
-            // Hide textarea and reset
-            $("#textInputDiv").hide();
-            $("#enumbersText")
-                .prop("required", false)
-                .val("")
-                .get(0).setCustomValidity("");
+function initClearButtons() {
+    $("#clearTextBtn").click(function () {
+        $("#enumbersText").val('');
+    });
 
-            // Show file input and set required
-            $("#fileInputDiv").show();
-            $("#fileInput")
-                .prop("required", true)
-                .get(0).setCustomValidity("");
-
-            showCheckmark();
-        } else {
-            // Hide file input and reset
-            $("#fileInputDiv").hide();
-            $("#fileInput")
-                .prop("required", false)
-                .val("")
-                .get(0).setCustomValidity("");
-            $("#fileCheck").hide();
-
-            // Show textarea and set required
-            $("#textInputDiv").show();
-            $("#enumbersText")
-                .prop("required", true)
-                .get(0).setCustomValidity("");
-        }
+    $("#clearFileBtn").click(function () {
+        $("#fileInput").val('');
+        $("#fileName").text('Ingen fil vald').removeClass("text-warning");
+        $("#fileCheck").hide();
     });
 }
 
@@ -66,10 +45,47 @@ function reset() {
     $("#progressBarText").text("0 %");
     $("#progressText").html("");
 }
+
+// Switch input type
+function initInputSwitch() {
+    $("#toggleTextBtn").click(function () {
+        $("#textInputDiv").show();
+        $("#fileInputDiv").hide();
+
+        $("#toggleTextBtn").removeClass("btn-outline-light").addClass("btn-primary");
+        $("#toggleFileBtn").removeClass("btn-primary").addClass("btn-outline-light");
+    });
+
+    $("#toggleFileBtn").click(function () {
+        $("#fileInputDiv").show();
+        $("#textInputDiv").hide();
+
+        $("#toggleFileBtn").removeClass("btn-outline-light").addClass("btn-primary");
+        $("#toggleTextBtn").removeClass("btn-primary").addClass("btn-outline-light");
+    });
+}
+function initTextInput() {
+    $("#enumbersText").on("input", function () {
+        if ($(this).val().trim().length > 0) {
+            $("#SubmitError").css("visibility", "hidden");
+        }
+    });
+}
 // Form submission
 function initFormSubmit() {
     $("#epdForm").submit(function (e) {
         e.preventDefault();
+
+        const manualVal = $("#enumbersText").val().trim();
+        const fileVal = $("#fileInput")[0].files.length;
+
+        if (!manualVal && !fileVal) {
+            $("#SubmitError").css("visibility", "visible");
+            return;
+        } else {
+            $("#SubmitError").css("visibility", "hidden");
+        }
+
         reset();
         var formData = new FormData(this);
         var selectedSources = [];
@@ -181,7 +197,7 @@ function updateLoadingbar() {
     $("#progressBar").css("width", percent + "%");
     $("#progressBarText").text(`${percent} %`);
     $("#progressText").html(`
-        <span class="me-3">Hämtade ${foundLinks + failedLinks} av ${totalLinks} länkar</span>
+        <span class="text-light me-3">Hämtade ${foundLinks + failedLinks} av ${totalLinks} länkar</span>
         <span class="text-success me-3">Hittade: ${foundLinks}</span>
         <span class="text-danger me-3">Misslyckade: ${failedLinks}</span>
     `);
@@ -233,6 +249,43 @@ $("input[name='inputType']").change(function () {
     });
 });
 
+function initFileInput() {
+    // Klicka på "Välj fil" öppnar filväljaren
+    $("#browseBtn").click(function () {
+        $("#fileInput").click();
+    });
+
+    // Visa filnamn och checkmark när fil väljs
+    $("#fileInput").on("change", function () {
+        $("#fileName").text(this.files.length > 0 ? this.files[0].name : "").addClass("text-warning");;
+        $("#fileCheck").toggle(this.files.length > 0);
+        $("#SubmitError").css("visibility", "hidden");
+    });
+
+    // Drag & drop highlight
+    $("#dropZone").on("dragover", function (e) {
+        e.preventDefault();
+        $(this).addClass("border-primary bg-light");
+        $("#cloud").addClass("text-white");
+    });
+    $("#dropZone").on("dragleave drop", function (e) {
+        e.preventDefault();
+        $(this).removeClass("border-primary bg-light");
+        $("#cloud").removeClass("text-white");
+    });
+
+    // Hantera fil-drop
+    $("#dropZone").on("drop", function (e) {
+        e.preventDefault();
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            $("#fileInput")[0].files = files; 
+            $("#fileName").text(files[0].name).addClass("text-warning");;
+            $("#fileCheck").show();
+            $("#SubmitError").css("visibility", "hidden");
+        }
+    });
+}
 function showCheckmark() {
     // Show green checkmark when a file is selected
     $("#fileInput").on("change", function () {
