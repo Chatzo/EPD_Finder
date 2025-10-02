@@ -1,4 +1,6 @@
-﻿using EPD_Finder.Models;
+﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
+using DocumentFormat.OpenXml.Vml;
+using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
 
 namespace EPD_Finder.Services
@@ -15,8 +17,13 @@ namespace EPD_Finder.Services
         public EpdService(HttpClient client, ILogger<EpdService> logger)
         {
             _client = client;
-            _client.DefaultRequestHeaders.Add("User-Agent", "C# App");
-            _logger = logger;
+             _logger = logger;
+            _client.Timeout = TimeSpan.FromSeconds(30);
+            _client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/120.0 Safari/537.36"
+            );
             _ahlsell = new AhlsellSearch(_client, _logger);
             _enummersok = new EnummersokSearch(_client, _logger);
             _onninen = new OnninenSearch(_client, _logger);
