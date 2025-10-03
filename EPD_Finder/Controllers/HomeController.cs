@@ -28,6 +28,18 @@ namespace EPD_Finder.Controllers
         [HttpPost]
         public IActionResult CreateJob(IFormFile file, string eNumbers, [FromForm] List<string> sources)
         {
+            // Ignorera det som inte är synligt
+            if (!string.IsNullOrWhiteSpace(eNumbers) && file != null && file.Length > 0)
+            {
+                // Om båda är ifyllda, använd bara det synliga (t.ex. textfält)
+                // Antag att frontend markerar vilket som är aktivt
+                // Här kan du kontrollera t.ex. en extra "inputType" parameter
+                var activeInput = Request.Form["inputType"];
+                if (activeInput == "text")
+                    file = null;
+                else
+                    eNumbers = null;
+            }
             var list = _epdService.ParseInput(eNumbers, file);
             if (!list.Any()) return BadRequest("Inga E-nummer hittades.");
 
