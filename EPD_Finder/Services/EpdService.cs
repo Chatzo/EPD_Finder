@@ -14,20 +14,26 @@ namespace EPD_Finder.Services
         private readonly OnninenSearch _onninen;
         private readonly SolarSearch _solar;
 
-        public EpdService(HttpClient client, ILogger<EpdService> logger)
+        public EpdService(HttpClient client, 
+            ILogger<EpdService> logger, 
+            AhlsellSearch ahlsell, 
+            EnummersokSearch enummersok,
+            SolarSearch solar,
+            OnninenSearch onninen)
         {
             _client = client;
              _logger = logger;
-            _client.Timeout = TimeSpan.FromSeconds(10);
+            _client.Timeout = TimeSpan.FromSeconds(15);
             _client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
                 "Chrome/120.0 Safari/537.36"
             );
-            _ahlsell = new AhlsellSearch(_client, _logger);
-            _enummersok = new EnummersokSearch(_client, _logger);
-            _onninen = new OnninenSearch(_client, _logger);
-            _solar = new SolarSearch(_client, _logger);
+
+            _ahlsell = ahlsell;
+            _enummersok = enummersok;
+            _solar = solar;
+            _onninen = onninen;
         }
         public List<string> ParseInput(string eNumbers, IFormFile file)
         {

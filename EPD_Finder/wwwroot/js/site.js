@@ -76,23 +76,35 @@ function initFormSubmit() {
     $("#epdForm").submit(function (e) {
         e.preventDefault();
 
-        const manualVal = $("#enumbersText").val().trim();
-        const fileVal = $("#fileInput")[0].files.length;
+        reset();
 
-        if (!manualVal && !fileVal) {
-            $("#SubmitError").css("visibility", "visible");
-            return;
-        } else {
-            $("#SubmitError").css("visibility", "hidden");
+        var formData = new FormData();
+
+        // Skicka bara det aktiva fältet
+        if ($("#textInputDiv").is(":visible")) {
+            var manualVal = $("#enumbersText").val().trim();
+            if (!manualVal) {
+                $("#SubmitError").css("visibility", "visible");
+                return;
+            }
+            formData.append("eNumbers", manualVal);
+        } else if ($("#fileInputDiv").is(":visible")) {
+            var fileInput = $("#fileInput")[0].files[0];
+            if (!fileInput) {
+                $("#SubmitError").css("visibility", "visible");
+                return;
+            }
+            formData.append("file", fileInput);
         }
 
-        reset();
-        var formData = new FormData(this);
-        var selectedSources = [];
+        // Lägg till valda källor
         $('input[name="sources"]:checked').each(function () {
-            selectedSources.push($(this).val());
+            formData.append('sources', $(this).val());
         });
-        selectedSources.forEach(src => formData.append('sources', src));
+        // Lägg till inputType för backend
+        var activeInput = $("#textInputDiv").is(":visible") ? "text" : "file";
+        formData.append("inputType", activeInput);
+       
         $.ajax({
             url: "/Home/CreateJob",
             type: "POST",
