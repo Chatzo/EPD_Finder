@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using System.Net;
 using System.Text.Json;
 
 namespace EPD_Finder.Services
@@ -7,10 +8,12 @@ namespace EPD_Finder.Services
     {
         private readonly HttpClient _client;
         private readonly ILogger<EpdService> _logger;
-        public OnninenSearch(HttpClient client, ILogger<EpdService> logger)
+        private readonly CookieContainer _cookies;
+        public OnninenSearch(HttpClient client, ILogger<EpdService> logger, CookieContainer cookies)
         {
             _client = client;
             _logger = logger;
+            _cookies = cookies;
         }
         public async Task<string> TryGetEpdLink(string eNumber)
         {
@@ -26,7 +29,13 @@ namespace EPD_Finder.Services
                 throw new ArgumentException("E-nummer måste anges.", nameof(eNumber));
 
             string quickSearchUrl = $"https://www.onninen.se/rest/v2/search/suggestions?term={eNumber}";
+            //för test
+            var response = await _client.GetAsync(quickSearchUrl);
+            _logger.LogWarning("Onninen svarade {status}. Headers: {headers}",
+                response.StatusCode,
+                string.Join(" | ", response.Headers.Select(h => $"{h.Key}: {string.Join(",", h.Value)}")));
 
+            //ovan för testing
             string json;
             try
             {
@@ -40,13 +49,21 @@ namespace EPD_Finder.Services
 
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-
-            var firstProduct = root.GetProperty("products").EnumerateArray().FirstOrDefault();
-            if (firstProduct.ValueKind != JsonValueKind.Undefined)
+            if (root.TryGetProperty("products", out var products))
             {
-                string code = firstProduct.GetProperty("code").GetString();
-                return code;
+                var firstProduct = products.EnumerateArray().FirstOrDefault();
+                if (firstProduct.ValueKind != JsonValueKind.Undefined &&
+                    firstProduct.TryGetProperty("code", out var productCode))
+                {
+                    return productCode.GetString();
+                }
             }
+            //var firstProduct = root.GetProperty("products").EnumerateArray().FirstOrDefault();
+            //if (firstProduct.ValueKind != JsonValueKind.Undefined)
+            //{
+            //    string code = firstProduct.GetProperty("code").GetString();
+            //    return code;
+            //}
 
             return null;
         }
@@ -55,6 +72,10 @@ namespace EPD_Finder.Services
         {
             if (string.IsNullOrWhiteSpace(productCode))
                 throw new ArgumentException("Produktkod måste anges.", nameof(productCode));
+
+
+            var cookieDump = _cookies.GetCookies(new Uri("https://www.onninen.se"));
+            _logger.LogWarning("Cookies: {cookies}", string.Join(" | ", cookieDump.Cast<Cookie>()));
 
             string apiUrl = $"https://www.onninen.se/rest/v1/product/{productCode}";
 
