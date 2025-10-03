@@ -11,29 +11,26 @@ namespace EPD_Finder.Services
         private readonly ILogger<EpdService> _logger;
         private readonly AhlsellSearch _ahlsell;
         private readonly EnummersokSearch _enummersok;
-        private readonly OnninenSearch _onninen;
         private readonly SolarSearch _solar;
+        private readonly SoneparSearch _sonepar;
+        private readonly RexelSearch _rexel;
 
         public EpdService(HttpClient client, 
             ILogger<EpdService> logger, 
             AhlsellSearch ahlsell, 
             EnummersokSearch enummersok,
             SolarSearch solar,
-            OnninenSearch onninen)
+            SoneparSearch sonepar,
+            RexelSearch rexel
+            )
         {
             _client = client;
              _logger = logger;
-            _client.Timeout = TimeSpan.FromSeconds(15);
-            _client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/120.0 Safari/537.36"
-            );
-
             _ahlsell = ahlsell;
             _enummersok = enummersok;
             _solar = solar;
-            _onninen = onninen;
+            _sonepar = sonepar;
+            _rexel = rexel;
         }
         public List<string> ParseInput(string eNumbers, IFormFile file)
         {
@@ -93,19 +90,23 @@ namespace EPD_Finder.Services
                 if (await IsLinkValid(pdfUrl))
                     return new ArticleResult { ENumber = eNumber, Source = "Ahlsell", EpdLink = pdfUrl };
             }
-
             if (selectedSources.Contains("Solar"))
             {
                 var pdfUrl = await _solar.TryGetEpdLink(eNumber);
                 if (await IsLinkValid(pdfUrl))
                     return new ArticleResult { ENumber = eNumber, Source = "Solar", EpdLink = pdfUrl };
             }
-
-            if (selectedSources.Contains("Onninen"))
+            if (selectedSources.Contains("Sonepar"))
             {
-                var pdfUrl = await _onninen.TryGetEpdLink(eNumber);
+                var pdfUrl = await _sonepar.TryGetEpdLink(eNumber);
                 if (await IsLinkValid(pdfUrl))
-                    return new ArticleResult { ENumber = eNumber, Source = "Onninen", EpdLink = pdfUrl };
+                    return new ArticleResult { ENumber = eNumber, Source = "Sonepar", EpdLink = pdfUrl };
+            }
+            if (selectedSources.Contains("Rexel"))
+            {
+                var pdfUrl = await _rexel.TryGetEpdLink(eNumber);
+                if (await IsLinkValid(pdfUrl))
+                    return new ArticleResult { ENumber = eNumber, Source = "Rexel", EpdLink = pdfUrl };
             }
 
             throw new ArgumentException("Ej hittad");

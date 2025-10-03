@@ -195,6 +195,10 @@ function startSSE(jobId) {
         currentSSE.close();
         currentSSE = null;
         $("#downloadForm").show();
+        document.getElementById("downloadForm").scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
     });
 
     currentSSE.onerror = function () {
@@ -214,12 +218,12 @@ function updateLoadingbar() {
         <span class="text-danger me-3">Misslyckade: ${failedLinks}</span>
     `);
 
-    if (percent >= 0 && percent <= 11) {
-        document.getElementById("loadingContainer").scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-    }
+    //if (percent >= 0 && percent <= 11) {
+    //    document.getElementById("loadingContainer").scrollIntoView({
+    //        behavior: "smooth",
+    //        block: "start"
+    //    });
+    //}
 }
 $("#downloadExcelForm").submit(function (e) {
     e.preventDefault();
@@ -252,14 +256,6 @@ function collectResultsFromTable() {
     });
     return JSON.stringify(arr);
 }
-
-$("input[name='inputType']").change(function () {
-    // Scroll the container div into view
-    document.querySelector(".mx-auto").scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
-});
 
 function initFileInput() {
     // Klicka på "Välj fil" öppnar filväljaren
