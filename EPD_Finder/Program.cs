@@ -68,10 +68,13 @@ namespace EPD_Finder
             {
                 c.Timeout = timeout;
                 c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+                c.DefaultRequestHeaders.Referrer = new Uri("https://www.onninen.se/");
             }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
             {
                 CookieContainer = cookieContainer,
-                AllowAutoRedirect = true
+                AllowAutoRedirect = true,
+                
+                
             });
 
             var app = builder.Build();
