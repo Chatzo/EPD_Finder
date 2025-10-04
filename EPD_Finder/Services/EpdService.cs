@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Vml;
 using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
+using System.Text.RegularExpressions;
 
 namespace EPD_Finder.Services
 {
@@ -16,9 +17,9 @@ namespace EPD_Finder.Services
         private readonly RexelSearch _rexel;
         private readonly OnninenSearch _onninen;
 
-        public EpdService(HttpClient client, 
-            ILogger<EpdService> logger, 
-            AhlsellSearch ahlsell, 
+        public EpdService(HttpClient client,
+            ILogger<EpdService> logger,
+            AhlsellSearch ahlsell,
             EnummersokSearch enummersok,
             SolarSearch solar,
             SoneparSearch sonepar,
@@ -27,7 +28,7 @@ namespace EPD_Finder.Services
             )
         {
             _client = client;
-             _logger = logger;
+            _logger = logger;
             _ahlsell = ahlsell;
             _enummersok = enummersok;
             _solar = solar;
@@ -115,16 +116,16 @@ namespace EPD_Finder.Services
             try
             {
                 var pdfUrl = await sourceService.TryGetEpdLink(eNumber);
-                    if (!string.IsNullOrEmpty(pdfUrl) && await IsLinkValid(pdfUrl))
-                        return new ArticleResult
-                        {
-                            ENumber = eNumber,
-                            Source = sourceName,
-                            EpdLink = pdfUrl
-                        };
+                if (!string.IsNullOrEmpty(pdfUrl) && await IsLinkValid(pdfUrl))
+                    return new ArticleResult
+                    {
+                        ENumber = eNumber,
+                        Source = sourceName,
+                        EpdLink = pdfUrl
+                    };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error fetching EPD for {eNumber} ,{ex}");
             }
@@ -147,11 +148,20 @@ namespace EPD_Finder.Services
 
                 if (getResponse.IsSuccessStatusCode)
                 {
+                    _logger.LogInformation($"Response code APPROVED on Get requests: {getResponse}");
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning($"Response code on failed Get requests: {getResponse.StatusCode}");
+                    if (getResponse.StatusCode.ToString().Contains("403"))
+                    {
+                        var urlMatch = Regex.Match(url, @"https?://\S+?\.pdf(?=(\?|\s|$))", RegexOptions.IgnoreCase);
+                        if (urlMatch.Success)
+                        {
+                            return true;
+                        }
+                    }
+                    _logger.LogWarning($"Response code FAILED on Get requests: {getResponse}");
                     return false;
                 }
             }

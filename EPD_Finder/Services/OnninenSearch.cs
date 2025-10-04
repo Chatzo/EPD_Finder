@@ -30,7 +30,8 @@ namespace EPD_Finder.Services
 
             string quickSearchUrl = $"https://www.onninen.se/rest/v2/search/suggestions?term={eNumber}";
             //för test
-            var response = await _client.GetAsync(quickSearchUrl);
+            //var response = await _client.GetAsync(quickSearchUrl);
+            var response = await TryRequestWithFallback(_client, quickSearchUrl);
             _logger.LogWarning("Onninen svarade {status}. Headers: {headers}",
                 response.StatusCode,
                 string.Join(" | ", response.Headers.Select(h => $"{h.Key}: {string.Join(",", h.Value)}")));
@@ -39,7 +40,15 @@ namespace EPD_Finder.Services
             string json;
             try
             {
-                json = await _client.GetStringAsync(quickSearchUrl);
+                //json = await _client.GetStringAsync(quickSearchUrl);
+                response = await TryRequestWithFallback(_client, quickSearchUrl);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning($"Onninen svarade {response.StatusCode} vid {quickSearchUrl}");
+                    return null;
+                }
+
+                json = await response.Content.ReadAsStringAsync();
             }
             catch (HttpRequestException ex)
             {
@@ -75,7 +84,15 @@ namespace EPD_Finder.Services
 
             try
             {
-                var json = await _client.GetStringAsync(apiUrl);
+                //var json = await _client.GetStringAsync(apiUrl);
+                var response = await TryRequestWithFallback(_client, apiUrl);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning($"Onninen svarade {response.StatusCode} vid {apiUrl}");
+                    return null;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
 
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
@@ -109,5 +126,22 @@ namespace EPD_Finder.Services
             _logger.LogError("Ingen EPD-länk hittades i produktens API-data.");
             return null;
         }
+        private async Task<HttpResponseMessage> TryRequestWithFallback(HttpClient client, string url)
+        {
+            // Första försök – vanlig request
+            var response = await client.GetAsync(url);
+            if (response.StatusCode != HttpStatusCode.Forbidden)
+                return response;
+
+            // Om 403 → försök igen med extra headers
+            var req = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.Referrer = new Uri("https://www.onninen.se/");
+            req.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            req.Headers.Add("Accept-Language", "sv-SE,sv;q=0.9,en;q=0.8");
+            req.Headers.Add("Cache-Control", "no-cache");
+
+            return await client.SendAsync(req);
+        }
+
     }
 }
