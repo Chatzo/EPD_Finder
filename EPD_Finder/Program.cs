@@ -1,6 +1,5 @@
 using EPD_Finder.Services;
 using EPD_Finder.Services.IServices;
-using System.Net;
 
 namespace EPD_Finder
 {
@@ -9,36 +8,50 @@ namespace EPD_Finder
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            var cookieContainer = new CookieContainer();
 
-            // Add services to the container.
-            builder.Services.AddControllersWithViews();
-            builder.Services.AddHttpClient<IEpdService, EpdService>()
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            var timeout = TimeSpan.FromSeconds(15);
+            var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+            HttpMessageHandler CreateHandler() => new HttpClientHandler
             {
                 AllowAutoRedirect = true
-            });
-            builder.Services.AddHttpClient<AhlsellSearch>();
-            builder.Services.AddHttpClient<EnummersokSearch>();
-            builder.Services.AddHttpClient<SolarSearch>();
-            builder.Services.AddHttpClient<OnninenSearch>(client =>
+            };
+            // Add services to the container.
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddHttpClient<IEpdService, EpdService>(c =>
             {
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.Add("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36");
-                client.DefaultRequestHeaders.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-                client.DefaultRequestHeaders.Add("Referer", "https://www.onninen.se/");
-                client.DefaultRequestHeaders.Add("Accept-Language", "sv-SE,sv;q=0.9,en;q=0.8");
-            })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                AllowAutoRedirect = true,
-                UseCookies = true,
-                CookieContainer = cookieContainer
-            });
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
 
-            builder.Services.AddSingleton(cookieContainer);
+            builder.Services.AddHttpClient<AhlsellSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
+
+            builder.Services.AddHttpClient<EnummersokSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
+
+            builder.Services.AddHttpClient<SolarSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
+
+            builder.Services.AddHttpClient<SoneparSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
+
+            builder.Services.AddHttpClient<RexelSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
 
             var app = builder.Build();
 
