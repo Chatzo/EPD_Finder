@@ -58,6 +58,13 @@ function initInputSwitch() {
 
     function switchView(newView) {
         var currentView = $(".input-section:visible").attr("id");
+
+        // if user clicks settings button again → go back
+        if (currentView === newView && newView === "SettingsDiv" && viewHistory.length > 0) {
+            var prev = viewHistory.pop();
+            return switchView(prev);
+        }
+
         if (currentView && currentView !== newView) {
             viewHistory.push(currentView);
         }

@@ -38,7 +38,6 @@ namespace EPD_Finder.Services
             try
             {
                 using var response = await _client.SendAsync(request);
-                response.EnsureSuccessStatusCode();
 
                 var jsonString = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(jsonString);
@@ -58,6 +57,7 @@ namespace EPD_Finder.Services
                             asset.TryGetProperty("url", out var urls) &&
                             urls.GetArrayLength() > 0)
                         {
+
                             return urls[0].GetProperty("url").GetString();
                         }
                     }

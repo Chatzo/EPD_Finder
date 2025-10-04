@@ -1,5 +1,6 @@
 using EPD_Finder.Services;
 using EPD_Finder.Services.IServices;
+using System.Net;
 
 namespace EPD_Finder
 {
@@ -9,11 +10,19 @@ namespace EPD_Finder
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            var timeout = TimeSpan.FromSeconds(15);
+            var timeout = TimeSpan.FromSeconds(3);
             var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-            HttpMessageHandler CreateHandler() => new HttpClientHandler
+            //HttpMessageHandler CreateHandler() => new HttpClientHandler
+            //{
+            //    AllowAutoRedirect = true
+            //};
+            HttpMessageHandler CreateHandler() => new SocketsHttpHandler
             {
-                AllowAutoRedirect = true
+                AllowAutoRedirect = true,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+                MaxConnectionsPerServer = 50,
+                ConnectTimeout = TimeSpan.FromSeconds(10)
             };
             // Add services to the container.
             builder.Services.AddControllersWithViews();
@@ -52,6 +61,18 @@ namespace EPD_Finder
                 c.Timeout = timeout;
                 c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
             }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
+
+            var cookieContainer = new CookieContainer();
+            builder.Services.AddSingleton(cookieContainer);
+            builder.Services.AddHttpClient<OnninenSearch>(c =>
+            {
+                c.Timeout = timeout;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                CookieContainer = cookieContainer,
+                AllowAutoRedirect = true
+            });
 
             var app = builder.Build();
 

@@ -29,7 +29,8 @@ WORKDIR /app
 COPY --from=build /app/EPD_Finder/out ./
 
 # Exponera porten appen använder
-EXPOSE 8000
+EXPOSE 10000
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
 
 # Starta appen
 ENTRYPOINT ["dotnet", "EPD_Finder.dll"]
