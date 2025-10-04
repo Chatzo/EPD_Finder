@@ -44,26 +44,61 @@ function reset() {
     $("#progressBar").css("width", "0%");
     $("#progressBarText").text("0 %");
     $("#progressText").html("");
+    $("#loadingContainer").hide();
+    $("#outputTable").hide();
+    window.scrollTo({
+        top: 0,
+        behavior: 'instant'
+    });
 }
 
 // Switch input type
 function initInputSwitch() {
-    $("#toggleTextBtn").click(function () {
-        $("#textInputDiv").show();
-        $("#fileInputDiv").hide();
+    var viewHistory = [];
 
-        $("#toggleTextBtn").removeClass("btn-outline-light").addClass("btn-primary");
-        $("#toggleFileBtn").removeClass("btn-primary").addClass("btn-outline-light");
-    });
+    function switchView(newView) {
+        var currentView = $(".input-section:visible").attr("id");
+        if (currentView && currentView !== newView) {
+            viewHistory.push(currentView);
+        }
 
-    $("#toggleFileBtn").click(function () {
-        $("#fileInputDiv").show();
-        $("#textInputDiv").hide();
+        // Hide all input sections
+        $(".input-section").hide();
+        $("#SearchBtn").show();
+        $("#BackBtn").hide();
+        $("#SubmitError").css("visibility", "hidden");
 
-        $("#toggleFileBtn").removeClass("btn-outline-light").addClass("btn-primary");
-        $("#toggleTextBtn").removeClass("btn-primary").addClass("btn-outline-light");
+
+        // Show new view
+        $("#" + newView).show();
+
+        // Update toggle button styles
+        $("#toggleTextBtn, #toggleFileBtn, #toggleSettingsBtn").removeClass("btn-primary").addClass("btn-outline-light");
+        if (newView === "textInputDiv") {
+            $("#toggleTextBtn").addClass("btn-primary").removeClass("btn-outline-light")
+        };
+        if (newView === "fileInputDiv") {
+            $("#toggleFileBtn").addClass("btn-primary").removeClass("btn-outline-light")
+        };
+        if (newView === "SettingsDiv") {
+            $("#toggleSettingsBtn").addClass("btn-primary").removeClass("btn-outline-light")
+            $("#SearchBtn").hide();
+            $("#BackBtn").show();
+        };
+    }
+
+    $("#toggleTextBtn").click(() => switchView("textInputDiv"));
+    $("#toggleFileBtn").click(() => switchView("fileInputDiv"));
+    $("#toggleSettingsBtn").click(() => switchView("SettingsDiv"));
+
+    $("#BackBtn").click(function () {
+        if (viewHistory.length > 0) {
+            var prev = viewHistory.pop();
+            switchView(prev);
+        }
     });
 }
+
 function initTextInput() {
     $("#enumbersText").on("input", function () {
         if ($(this).val().trim().length > 0) {
@@ -83,15 +118,18 @@ function initFormSubmit() {
         // Skicka bara det aktiva fältet
         if ($("#textInputDiv").is(":visible")) {
             var manualVal = $("#enumbersText").val().trim();
+            if (!manualVal && fileInput) {
+                formData.append("file", fileInput);
+            }
             if (!manualVal) {
-                $("#SubmitError").css("visibility", "visible");
+                $("#SubmitError").text("Vänligen ange ett eller flera E-nummer.").css("visibility", "visible");
                 return;
             }
             formData.append("eNumbers", manualVal);
         } else if ($("#fileInputDiv").is(":visible")) {
             var fileInput = $("#fileInput")[0].files[0];
             if (!fileInput) {
-                $("#SubmitError").css("visibility", "visible");
+                $("#SubmitError").text("Vänligen ladda upp en Excel-fil.").css("visibility", "visible");
                 return;
             }
             formData.append("file", fileInput);
@@ -135,13 +173,27 @@ function preCreateRows(eNumbers, jobId) {
     eNumbers.forEach(num => {
         var row = $("<tr>").attr("data-enumber", num);
         row.append($("<td>").css("position", "relative").text(num));
-        row.append($("<td>").css("position", "relative").text(""));
+        row.append($("<td>").css("position", "relative").addClass("source-col").text(""));
         row.append($("<td>").css("position", "relative").text("Hämtar..."));
         row.append($("<td>").css("position", "relative"));   
         $("#results").append(row);
     });
+    toggleSources();
 
     startSSE(jobId);
+}
+
+function toggleSources() {
+    $("#showSources").change(function () {
+        if ($(this).is(":checked")) {
+            $(".source-col").show();
+        } else {
+            $(".source-col").hide();
+        }
+    });
+
+    // kör vid start också (så det följer default state)
+    $("#showSources").trigger("change");
 }
 
 // SSE
@@ -157,7 +209,6 @@ function startSSE(jobId) {
 
         if (result.EpdLink && result.EpdLink.startsWith("http")) {
             foundLinks++;
-
             var sourceTd = row.find("td").eq(1);
             if (result.Source === "Ahlsell") {
                 sourceTd.text(result.Source || "").removeClass("text-warning").addClass("text-info");
@@ -217,13 +268,6 @@ function updateLoadingbar() {
         <span class="text-success me-3">Hittade: ${foundLinks}</span>
         <span class="text-danger me-3">Misslyckade: ${failedLinks}</span>
     `);
-
-    //if (percent >= 0 && percent <= 11) {
-    //    document.getElementById("loadingContainer").scrollIntoView({
-    //        behavior: "smooth",
-    //        block: "start"
-    //    });
-    //}
 }
 $("#downloadExcelForm").submit(function (e) {
     e.preventDefault();
@@ -256,6 +300,10 @@ function collectResultsFromTable() {
     });
     return JSON.stringify(arr);
 }
+
+$(document).on("click", "#newSearch", function () {
+    reset();
+});
 
 function initFileInput() {
     // Klicka på "Välj fil" öppnar filväljaren

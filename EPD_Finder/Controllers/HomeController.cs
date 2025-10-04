@@ -110,15 +110,13 @@ namespace EPD_Finder.Controllers
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("EPD Links");
             ws.Cell(1, 1).Value = "E-nummer";
-            ws.Cell(1, 2).Value = "Källa";
-            ws.Cell(1, 3).Value = "EPD-länk";
+            ws.Cell(1, 2).Value = "EPD-länk";
             ws.Range(1, 1, 1, 3).Style.Font.Bold = true;
 
             for (int i = 0; i < list.Count; i++)
             {
                 ws.Cell(i + 2, 1).Value = list[i].ENumber;
-                ws.Cell(i + 2, 2).Value = list[i].Source;
-                var cell = ws.Cell(i + 2, 3);
+                var cell = ws.Cell(i + 2, 2);
                 cell.Value = list[i].EpdLink;
                 if (!string.IsNullOrWhiteSpace(list[i].EpdLink) && list[i].EpdLink.StartsWith("http"))
                 {
