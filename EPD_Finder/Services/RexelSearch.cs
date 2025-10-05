@@ -50,7 +50,7 @@ namespace EPD_Finder.Services
                     foreach (var asset in assets.EnumerateArray())
                     {
                         if (asset.TryGetProperty("mime", out var mime) &&
-                            mime.GetString() == "application/pdf" &&
+                            (mime.GetString() == "application/pdf" || mime.GetString() == "text/html") &&
                             asset.TryGetProperty("MIME_PURPOSE", out var purpose) &&
                             purpose.GetString() != null &&
                             purpose.GetString().Contains("Miljövarudeklaration", StringComparison.OrdinalIgnoreCase) &&
