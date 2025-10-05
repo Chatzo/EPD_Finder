@@ -62,20 +62,25 @@ namespace EPD_Finder
                 c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
             }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
 
-            var cookieContainer = new CookieContainer();
-            builder.Services.AddSingleton(cookieContainer);
-            builder.Services.AddHttpClient<OnninenSearch>(c =>
+            //var cookieContainer = new CookieContainer();
+            //builder.Services.AddSingleton(cookieContainer);
+            //builder.Services.AddHttpClient<OnninenSearch>(c =>
+            //{
+            //    c.Timeout = timeout;
+            //    c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+            //    c.DefaultRequestHeaders.Referrer = new Uri("https://www.onninen.se/");
+            //}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            //{
+            //    CookieContainer = cookieContainer,
+            //    AllowAutoRedirect = true,
+                
+                
+            //});
+            builder.Services.AddHttpClient<Schneider>(c =>
             {
                 c.Timeout = timeout;
                 c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-                c.DefaultRequestHeaders.Referrer = new Uri("https://www.onninen.se/");
-            }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                CookieContainer = cookieContainer,
-                AllowAutoRedirect = true,
-                
-                
-            });
+            }).ConfigurePrimaryHttpMessageHandler(CreateHandler);
 
             var app = builder.Build();
 

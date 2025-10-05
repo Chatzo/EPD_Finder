@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Vml;
 using EPD_Finder.Models;
 using EPD_Finder.Services.IServices;
+using System.Net;
 using System.Text.RegularExpressions;
 
 namespace EPD_Finder.Services
@@ -15,7 +16,8 @@ namespace EPD_Finder.Services
         private readonly SolarSearch _solar;
         private readonly SoneparSearch _sonepar;
         private readonly RexelSearch _rexel;
-        private readonly OnninenSearch _onninen;
+        //private readonly OnninenSearch _onninen;
+        private readonly Schneider _schneider;
 
         public EpdService(HttpClient client,
             ILogger<EpdService> logger,
@@ -24,7 +26,8 @@ namespace EPD_Finder.Services
             SolarSearch solar,
             SoneparSearch sonepar,
             RexelSearch rexel,
-            OnninenSearch onninen
+            //OnninenSearch onninen,
+            Schneider schneider
             )
         {
             _client = client;
@@ -34,7 +37,8 @@ namespace EPD_Finder.Services
             _solar = solar;
             _sonepar = sonepar;
             _rexel = rexel;
-            _onninen = onninen;
+            //_onninen = onninen;
+            _schneider = schneider;
         }
         public List<string> ParseInput(string eNumbers, IFormFile file)
         {
@@ -99,8 +103,8 @@ namespace EPD_Finder.Services
             if (selectedSources.Contains("Rexel"))
                 tasks.Add(TryGetSourceLink(eNumber, "Rexel", _rexel));
 
-            if (selectedSources.Contains("Onninen"))
-                tasks.Add(TryGetSourceLink(eNumber, "Onninen", _onninen));
+            //if (selectedSources.Contains("Onninen"))
+            //    tasks.Add(TryGetSourceLink(eNumber, "Onninen", _onninen));
 
             var results = await Task.WhenAll(tasks);
 
@@ -137,6 +141,11 @@ namespace EPD_Finder.Services
         {
             try
             {
+                if(url.ToLower().Contains("schneider"))
+                {
+                    return await _schneider.TryVerifyLink(url); //special case
+                }
+
                 // First try HEAD request
                 var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
                 var headResponse = await _client.SendAsync(headRequest);
@@ -153,7 +162,13 @@ namespace EPD_Finder.Services
                 }
                 else
                 {
-                    if (getResponse.StatusCode.ToString().Contains("403"))
+                    if (getResponse.StatusCode.ToString().Contains("404"))
+                    {
+                        _logger.LogWarning($"Response status code:: {getResponse.StatusCode.ToString()}");
+                        _logger.LogWarning($"Response code FAILED on Get requests: {getResponse}");
+                        return false;
+                    }
+                    else if (getResponse.StatusCode.ToString().Contains("403"))
                     {
                         var urlMatch = Regex.Match(url, @"https?://\S+?\.pdf(?=(\?|\s|$))", RegexOptions.IgnoreCase);
                         if (urlMatch.Success)
@@ -161,12 +176,14 @@ namespace EPD_Finder.Services
                             return true;
                         }
                     }
+                    _logger.LogWarning($"Response status code:: {getResponse.StatusCode.ToString()}");
                     _logger.LogWarning($"Response code FAILED on Get requests: {getResponse}");
                     return false;
                 }
             }
-            catch
+            catch (Exception ex) 
             {
+                _logger.LogWarning($"Response code FAILED with Exception: {ex}");
                 return false;
             }
         }
